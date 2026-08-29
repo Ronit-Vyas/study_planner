@@ -17,18 +17,10 @@ class StudyPlannerApp extends StatelessWidget {
       title: 'Study Planner',
 
       theme: ThemeData(
-        useMaterial3: true,
-
         colorScheme: ColorScheme.fromSeed(
           seedColor: Colors.indigo,
         ),
-
-        scaffoldBackgroundColor: const Color(0xFFF6F7FB),
-
-        appBarTheme: const AppBarTheme(
-          centerTitle: false,
-          elevation: 0,
-        ),
+        useMaterial3: true,
       ),
 
       home: const HomeScreen(),
