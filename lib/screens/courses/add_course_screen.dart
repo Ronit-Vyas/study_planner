@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../models/course_model.dart';
+import '../../services/firestore_service.dart';
 
 class AddCourseScreen extends StatefulWidget {
   const AddCourseScreen({super.key});
@@ -73,6 +74,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
       double.tryParse(hoursController.text.trim()) ?? 1,
     );
 
+    FirestoreService.addCourse(course);
 
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../models/course_model.dart';
+import '../../services/firestore_service.dart';
 import '../../widgets/course_card.dart';
 import 'add_course_screen.dart';
 import 'course_details_screen.dart';
@@ -15,7 +16,7 @@ class CoursesScreen extends StatefulWidget {
 class _CoursesScreenState extends State<CoursesScreen> {
   @override
   Widget build(BuildContext context) {
-    final courses = [];
+    final courses = FirestoreService.getCourses();
 
     return Scaffold(
       appBar: AppBar(
