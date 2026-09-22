@@ -21,7 +21,7 @@ Instead of simply storing a list of courses, the application allows users to:
 * Monitor overall course and topic completion.
 * Manage their account securely using authentication.
 
-The application is being developed using **Flutter and Dart**, with **Firebase** planned for authentication and cloud data storage.
+The application is developed using **Flutter and Dart**. It follows an offline-first, privacy-focused architecture where the **database stores exclusively user accounts and authentication**, while all academic study data (courses, topics, tasks, schedules) is stored **locally on the user's device**, accompanied by an on-device **local notification system** for study reminders and deadline alerts.
 
 ---
 
@@ -494,50 +494,101 @@ StudyTask
 
 ---
 
-# ☁️ Firebase Integration
+# 💾 Data Storage Architecture & Functional Dependencies
 
-Firebase is planned as the backend platform.
+### 🔗 Review of Functional Dependencies
 
-### Firebase Services
+Functional dependencies in the Study Planner system operate across two levels: **System/Feature dependencies** and **Relational/Data dependencies**.
 
-#### Firebase Authentication
+#### 1. System Feature Dependencies
+```text
+[User Authentication (FR-01)]
+           │
+           ▼
+    [Active User (userId)]
+           │
+           ├──────────────────────────────┐
+           ▼                              ▼
+ [Course Management (FR-02)]      [Daily Available Hours]
+           │                              │
+           ▼                              │
+  [Topic Management (FR-03)]              │
+           │                              │
+           ├──────────────────────────────┘
+           ▼
+ [Schedule Generation (FR-04)] ◄─── Course Deadlines & Priorities
+           │
+           ▼
+ [Daily Study Tasks (FR-05)]
+           │
+           ├──────────────────────────────┐
+           ▼                              ▼
+[Calendar View (FR-06)]        [Progress Tracking (FR-07)]
+           │                              │
+           └──────────────┬───────────────┘
+                          ▼
+            [Dashboard / Home (FR-08)]
+                          │
+                          ▼
+             [Notifications (FR-11)]
+```
 
-Used for:
+* **Authentication (FR-01)**: The foundational dependency. Generates the active session `userId` used to isolate user data.
+* **Course Management (FR-02)**: Functionally dependent on the active user: $\text{Course} \to \text{userId}$.
+* **Topic Management (FR-03)**: Strictly functionally dependent on Course: $\text{Topic} \to \text{courseId}$. A topic cannot exist without an overarching course.
+* **Schedule Generation (FR-04)**: Depends on:
+  $$\text{ScheduleTasks} = f(\text{Courses}, \text{Topics}, \text{DailyHours}, \text{Deadlines}, \text{Priorities}, \text{CurrentDate})$$
+* **Daily Study Tasks (FR-05)**: Dependent on the schedule generator, distributing topic chunks over days until deadlines.
+* **Calendar (FR-06) & Progress (FR-07)**: Functionally derived from task completion states and calendar dates.
+* **Notifications (FR-11)**: Depends on pending daily study tasks and approaching course deadlines (< 48 hours).
 
-* Registration.
-* Login.
-* Logout.
-* Password recovery.
-* User authentication.
+#### 2. Relational / Normalization Functional Dependencies
+* **Users Relation (Stored in Database)**:
+  $$\text{id} \to \{\text{name}, \text{email}, \text{password\_hash}, \text{created\_at}\}$$
+  *Candidate Keys*: `id`, `email`.
+* **Courses Relation (Stored Locally on Device)**:
+  $$\text{id} \to \{\text{userId}, \text{name}, \text{description}, \text{deadline}, \text{priority}, \text{estimatedHours}\}$$
+* **Topics Relation (Stored Locally on Device)**:
+  $$\text{id} \to \{\text{courseId}, \text{name}, \text{estimatedHours}\}$$
+* **Study Tasks Relation (Stored Locally on Device)**:
+  $$\text{id} \to \{\text{userId}, \text{courseId}, \text{topicId}, \text{date}, \text{duration}, \text{completed}\}$$
 
-#### Cloud Firestore
+---
 
-Used for storing:
+### 🏛️ Storage Separation Architecture
 
-* User information.
-* Courses.
-* Topics.
-* Scheduled tasks.
-* Completion status.
-
-Planned conceptual structure:
+To ensure user privacy, instant offline responsiveness, and zero server/database overhead for everyday task updates, storage is explicitly decoupled:
 
 ```text
-Firestore
-│
-└── users
-     │
-     └── userId
-          │
-          ├── courses
-          │    └── courseId
-          │
-          ├── topics
-          │    └── topicId
-          │
-          └── tasks
-               └── taskId
+┌────────────────────────────────────────────────────────┐
+│                     STUDY PLANNER                      │
+└──────────────────────────┬─────────────────────────────┘
+                           │
+           ┌───────────────┴───────────────┐
+           ▼                               ▼
+ ┌──────────────────┐            ┌──────────────────┐
+ │  DATABASE (DB)   │            │  LOCAL STORAGE   │
+ │  (Users Only)    │            │  (User Device)   │
+ ├──────────────────┤            ├──────────────────┤
+ │ • users table    │            │ • courses (JSON) │
+ │   - id           │            │ • topics  (JSON) │
+ │   - name         │            │ • tasks   (JSON) │
+ │   - email        │            │ • settings(JSON) │
+ │   - password     │            │ Keyed by userId  │
+ │   - created_at   │            │ Offline-first    │
+ └──────────────────┘            └──────────────────┘
 ```
+
+1. **Database (`UserModel` / SQLite)**:
+   * **Only** stores `users`.
+   * Tables for `courses`, `topics`, and `tasks` are eliminated from the database.
+   * Handles secure authentication, account creation, and user credentials.
+
+2. **Device Local Storage (`LocalStorageService` / `SharedPreferences`)**:
+   * Stores all `courses`, `topics`, `tasks`, and user preferences on the client device.
+   * Data keys are scoped per user (`courses_${userId}`, `tasks_${userId}`).
+   * Complete offline capability with instant access speed.
+
 
 ---
 
@@ -586,15 +637,16 @@ Firestore
 
 # 🛠️ Technology Stack
 
-| Technology              | Purpose                      |
-| ----------------------- | ---------------------------- |
-| Flutter                 | Mobile application framework |
-| Dart                    | Programming language         |
-| Firebase Authentication | User authentication          |
-| Cloud Firestore         | Cloud database               |
-| Material 3              | UI components                |
-| Git                     | Version control              |
-| GitHub                  | Source-code hosting          |
+| Technology                  | Purpose                                        |
+| --------------------------- | ---------------------------------------------- |
+| Flutter                     | Mobile application framework                   |
+| Dart                        | Programming language                           |
+| SQLite (sqflite)            | Database for User Accounts & Auth (Users only) |
+| SharedPreferences (JSON)    | Local Device Storage (Courses, Topics, Tasks)  |
+| Flutter Local Notifications | Study reminders & approaching deadline alerts  |
+| Material 3                  | UI components                                  |
+| Git                         | Version control                                |
+| GitHub                      | Source-code hosting                            |
 
 ---
 
@@ -759,16 +811,16 @@ The project is being developed incrementally.
 * [x] GitHub repository created
 * [x] Initial frontend structure
 * [x] Navigation concept
-* [ ] Complete Home UI
-* [ ] Course UI
-* [ ] Topic management UI
-* [ ] Calendar UI
-* [ ] Profile UI
-* [ ] Scheduler
-* [ ] Firebase Authentication
-* [ ] Cloud Firestore
-* [ ] Progress tracking
-* [ ] Notifications
+* [x] Complete Home UI with dynamic dashboard
+* [x] Course UI with local device persistence
+* [x] Topic management UI
+* [x] Calendar UI with daily tasks
+* [x] Profile UI with statistics & logout
+* [x] Scheduler algorithm
+* [x] User Accounts Database (SQLite users table only)
+* [x] Local Device Storage (Courses, Topics, Tasks on user device)
+* [x] Progress tracking
+* [x] Local Notifications (Study reminders & deadline alerts)
 
 ---
 

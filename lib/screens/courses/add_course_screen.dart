@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../models/course_model.dart';
-import '../../services/firestore_service.dart';
+import '../../services/course_service.dart';
 
 class AddCourseScreen extends StatefulWidget {
   const AddCourseScreen({super.key});
@@ -33,13 +33,9 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
   Future<void> selectDeadline() async {
     final picked = await showDatePicker(
       context: context,
-      initialDate: DateTime.now().add(
-        const Duration(days: 7),
-      ),
+      initialDate: DateTime.now().add(const Duration(days: 7)),
       firstDate: DateTime.now(),
-      lastDate: DateTime.now().add(
-        const Duration(days: 3650),
-      ),
+      lastDate: DateTime.now().add(const Duration(days: 3650)),
     );
 
     if (picked != null) {
@@ -49,17 +45,15 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     }
   }
 
-  void saveCourse() {
+  Future<void> saveCourse() async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
 
     if (selectedDeadline == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please select a deadline'),
-        ),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Please select a deadline')));
 
       return;
     }
@@ -70,17 +64,18 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
       description: descriptionController.text.trim(),
       deadline: selectedDeadline!,
       priority: selectedPriority,
-      estimatedHours:
-      double.tryParse(hoursController.text.trim()) ?? 1,
+      estimatedHours: double.tryParse(hoursController.text.trim()) ?? 1,
     );
 
-    FirestoreService.addCourse(course);
+    await CourseService.addCourse(course);
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Course added successfully'),
-      ),
-    );
+    if (!mounted) {
+      return;
+    }
+
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Course added successfully')));
 
     Navigator.pop(context);
   }
@@ -91,9 +86,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
       appBar: AppBar(
         title: const Text(
           'Add Course',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(fontWeight: FontWeight.bold),
         ),
       ),
 
@@ -179,18 +172,9 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                   border: OutlineInputBorder(),
                 ),
                 items: const [
-                  DropdownMenuItem(
-                    value: 'High',
-                    child: Text('High'),
-                  ),
-                  DropdownMenuItem(
-                    value: 'Medium',
-                    child: Text('Medium'),
-                  ),
-                  DropdownMenuItem(
-                    value: 'Low',
-                    child: Text('Low'),
-                  ),
+                  DropdownMenuItem(value: 'High', child: Text('High')),
+                  DropdownMenuItem(value: 'Medium', child: Text('Medium')),
+                  DropdownMenuItem(value: 'Low', child: Text('Low')),
                 ],
                 onChanged: (value) {
                   setState(() {
@@ -215,8 +199,8 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                     selectedDeadline == null
                         ? 'Select deadline'
                         : '${selectedDeadline!.day}/'
-                        '${selectedDeadline!.month}/'
-                        '${selectedDeadline!.year}',
+                              '${selectedDeadline!.month}/'
+                              '${selectedDeadline!.year}',
                   ),
                 ),
               ),
@@ -230,10 +214,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                   onPressed: saveCourse,
                   child: const Text(
                     'Create Course',
-                    style: TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
                   ),
                 ),
               ),
@@ -249,10 +230,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
       padding: const EdgeInsets.only(bottom: 8),
       child: Text(
         text,
-        style: const TextStyle(
-          fontWeight: FontWeight.bold,
-          fontSize: 15,
-        ),
+        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
       ),
     );
   }

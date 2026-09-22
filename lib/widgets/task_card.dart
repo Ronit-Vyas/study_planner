@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../models/task_model.dart';
-import '../services/firestore_service.dart';
-import '../utils/helpers.dart';
+import '../../models/task_model.dart';
+import '../../services/course_service.dart';
 import 'priority_badge.dart';
 
 class TaskCard extends StatelessWidget {
@@ -17,100 +16,128 @@ class TaskCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Find the related course
-    final course = FirestoreService.courses
-        .where((course) => course.id == task.courseId)
-        .firstOrNull;
-
-    // Find the related topic
-    final topic = FirestoreService.topics
-        .where((topic) => topic.id == task.topicId)
-        .firstOrNull;
-
-    final courseName = course?.name ?? 'Unknown Course';
-    final topicName = topic?.name ?? 'Unknown Topic';
-
-    return Card(
-      elevation: 0,
-      margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(15),
-
-        child: Row(
-          children: [
-            Checkbox(
-              value: task.completed,
-              onChanged: (_) {
-                onChanged();
-              },
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(5),
+    return FutureBuilder(
+      future: Future.wait([
+        CourseService.getCourseById(task.courseId),
+        CourseService.getTopicById(task.topicId),
+      ]),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState ==
+            ConnectionState.waiting) {
+          return const Card(
+            child: Padding(
+              padding: EdgeInsets.all(20),
+              child: Center(
+                child: CircularProgressIndicator(),
               ),
             ),
+          );
+        }
 
-            const SizedBox(width: 5),
+        if (!snapshot.hasData) {
+          return const Card(
+            child: Padding(
+              padding: EdgeInsets.all(20),
+              child: Text(
+                'Unable to load task details',
+              ),
+            ),
+          );
+        }
 
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Topic name
-                  Text(
-                    topicName,
-                    style: TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.bold,
-                      decoration: task.completed
-                          ? TextDecoration.lineThrough
-                          : null,
-                    ),
+        final results = snapshot.data!;
+
+        final course = results[0] as dynamic;
+        final topic = results[1] as dynamic;
+
+        final courseName =
+            course?.name ?? 'Unknown Course';
+
+        final topicName =
+            topic?.name ?? 'Unknown Topic';
+
+        return Card(
+          elevation: 0,
+          margin: const EdgeInsets.only(bottom: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(15),
+            child: Row(
+              children: [
+                Checkbox(
+                  value: task.completed,
+                  onChanged: (_) => onChanged(),
+                  shape: RoundedRectangleBorder(
+                    borderRadius:
+                    BorderRadius.circular(5),
                   ),
+                ),
 
-                  const SizedBox(height: 5),
+                const SizedBox(width: 5),
 
-                  // Course name
-                  Text(
-                    courseName,
-                    style: TextStyle(
-                      color: Colors.grey.shade600,
-                      fontSize: 13,
-                    ),
-                  ),
-
-                  const SizedBox(height: 10),
-
-                  Row(
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment:
+                    CrossAxisAlignment.start,
                     children: [
-                      const Icon(
-                        Icons.access_time,
-                        size: 15,
+                      Text(
+                        topicName,
+                        style: TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.bold,
+                          decoration: task.completed
+                              ? TextDecoration.lineThrough
+                              : null,
+                        ),
                       ),
 
-                      const SizedBox(width: 4),
+                      const SizedBox(height: 5),
 
                       Text(
-                        '${task.duration} hours',
-                        style: const TextStyle(
+                        courseName,
+                        style: TextStyle(
+                          color: Colors.grey.shade600,
                           fontSize: 13,
                         ),
                       ),
 
-                      const SizedBox(width: 12),
+                      const SizedBox(height: 10),
 
-                      PriorityBadge(
-                        priority: course?.priority ?? 'Medium',
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.access_time,
+                            size: 15,
+                          ),
+
+                          const SizedBox(width: 4),
+
+                          Text(
+                            '${task.duration} hours',
+                            style: const TextStyle(
+                              fontSize: 13,
+                            ),
+                          ),
+
+                          const SizedBox(width: 12),
+
+                          PriorityBadge(
+                            priority:
+                            course?.priority ??
+                                'Medium',
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }
