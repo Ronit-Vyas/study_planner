@@ -1,78 +1,124 @@
-import 'dart:convert';
-import 'package:crypto/crypto.dart' as crypto;
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
 import '../models/user_model.dart';
 
 class AuthService {
-  static const String _sessionKey = 'current_user_session';
+  // Firebase Authentication instance
+  static final FirebaseAuth _auth = FirebaseAuth.instance;
+
+  // Local representation of the logged-in user
   static UserModel? _currentUser;
 
   static UserModel? get currentUser => _currentUser;
-  static bool get isLoggedIn => _currentUser != null;
 
+  // Firebase User
+  static User? get firebaseUser => _auth.currentUser;
+
+  // Check whether Firebase has a logged-in user
+  static bool get isLoggedIn => _auth.currentUser != null;
 
   static Future<UserModel?> init() async {
-    final prefs = await SharedPreferences.getInstance();
-    final userJson = prefs.getString(_sessionKey);
-    if (userJson != null) {
-      try {
-        _currentUser = UserModel.fromJson(userJson);
-        return _currentUser;
-      } catch (_) {
-        await prefs.remove(_sessionKey);
-      }
+    // Firebase automatically restores the authentication session.
+    final firebaseUser = _auth.currentUser;
+
+    if (firebaseUser == null) {
+      _currentUser = null;
+      return null;
     }
-    return null;
+
+    // Try to find the user's local profile using Firebase UID
+    final localUser = await UserModel.findById(
+      firebaseUser.uid,
+    );
+
+    if (localUser != null) {
+      _currentUser = UserModel.fromMap(localUser);
+
+      return _currentUser;
+    }
+
+
+    final name =
+        firebaseUser.displayName ??
+            firebaseUser.email?.split('@').first ??
+            'User';
+
+    final user = UserModel(
+      id: firebaseUser.uid,
+      name: name,
+      email: firebaseUser.email ?? '',
+    );
+
+    await UserModel.insertUser(
+      user.toMap(),
+    );
+
+    _currentUser = user;
+
+    return user;
   }
+
 
   static Future<UserModel> register({
     required String name,
     required String email,
     required String password,
   }) async {
-    final trimmedEmail = email.trim().toLowerCase();
     final trimmedName = name.trim();
+    final trimmedEmail = email.trim().toLowerCase();
+
 
     if (trimmedName.isEmpty) {
       throw Exception('Name cannot be empty.');
     }
-    if (trimmedEmail.isEmpty || !trimmedEmail.contains('@')) {
-      throw Exception('Please enter a valid email address.');
+
+    if (trimmedEmail.isEmpty ||
+        !trimmedEmail.contains('@')) {
+      throw Exception(
+        'Please enter a valid email address.',
+      );
     }
+
     if (password.length < 6) {
-      throw Exception('Password must be at least 6 characters.');
+      throw Exception(
+        'Password must be at least 6 characters.',
+      );
     }
 
 
-    final existing = await UserModel.findByEmail(trimmedEmail);
-    if (existing != null) {
-      throw Exception('An account with this email already exists.');
-    }
-
-    final userId = 'user_${DateTime.now().millisecondsSinceEpoch}';
-    final passwordHash = _hashPassword(password);
-    final now = DateTime.now();
-
-    final userRow = {
-      'id': userId,
-      'name': trimmedName,
-      'email': trimmedEmail,
-      'password': passwordHash,
-      'created_at': now.millisecondsSinceEpoch,
-    };
-
-    await UserModel.insertUser(userRow);
-
-    final user = UserModel(
-      id: userId,
-      name: trimmedName,
+    final credential =
+    await _auth.createUserWithEmailAndPassword(
       email: trimmedEmail,
-      createdAt: now,
+      password: password,
+    );
+
+    final firebaseUser = credential.user;
+
+    if (firebaseUser == null) {
+      throw Exception(
+        'Unable to create account.',
+      );
+    }
+
+
+    await firebaseUser.updateDisplayName(
+      trimmedName,
     );
 
 
-    await _saveSession(user);
+    final user = UserModel(
+      id: firebaseUser.uid,
+      name: trimmedName,
+      email: firebaseUser.email ?? trimmedEmail,
+    );
+
+    await UserModel.insertUser(
+      user.toMap(),
+    );
+
+    // Update local state
     _currentUser = user;
+
     return user;
   }
 
@@ -82,43 +128,114 @@ class AuthService {
     required String password,
   }) async {
     final trimmedEmail = email.trim().toLowerCase();
-    final userRow = await UserModel.findByEmail(trimmedEmail);
 
-    if (userRow == null) {
-      throw Exception('No account found with this email.');
+    if (trimmedEmail.isEmpty) {
+      throw Exception(
+        'Please enter your email address.',
+      );
     }
 
-    final expectedHash = _hashPassword(password);
-    if (userRow['password'] != expectedHash) {
-      throw Exception('Incorrect password. Please try again.');
+    if (password.isEmpty) {
+      throw Exception(
+        'Please enter your password.',
+      );
     }
 
-    final user = UserModel(
-      id: userRow['id'] as String,
-      name: userRow['name'] as String,
-      email: userRow['email'] as String,
-      createdAt: DateTime.fromMillisecondsSinceEpoch(userRow['created_at'] as int),
+
+    final credential =
+    await _auth.signInWithEmailAndPassword(
+      email: trimmedEmail,
+      password: password,
     );
 
-    await _saveSession(user);
+    final firebaseUser = credential.user;
+
+    if (firebaseUser == null) {
+      throw Exception('Login failed.');
+    }
+
+
+    final localUser = await UserModel.findById(
+      firebaseUser.uid,
+    );
+
+    if (localUser != null) {
+      _currentUser = UserModel.fromMap(
+        localUser,
+      );
+
+      return _currentUser!;
+    }
+
+    final name =
+        firebaseUser.displayName ??
+            firebaseUser.email?.split('@').first ??
+            'User';
+
+    final user = UserModel(
+      id: firebaseUser.uid,
+      name: name,
+      email: firebaseUser.email ?? trimmedEmail,
+    );
+
+    await UserModel.insertUser(
+      user.toMap(),
+    );
+
     _currentUser = user;
+
     return user;
   }
 
 
   static Future<void> logout() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_sessionKey);
+    // Firebase handles the authentication session.
+    await _auth.signOut();
+
+    // Clear local in-memory user
     _currentUser = null;
   }
 
-  static Future<void> _saveSession(UserModel user) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_sessionKey, user.toJson());
-  }
+  static Future<void> updateName(
+      String newName,
+      ) async {
+    final trimmedName = newName.trim();
 
-  static String _hashPassword(String password) {
-    final bytes = utf8.encode(password);
-    return crypto.sha256.convert(bytes).toString();
+    if (trimmedName.isEmpty) {
+      throw Exception(
+        'Name cannot be empty.',
+      );
+    }
+
+    final firebaseUser = _auth.currentUser;
+
+    if (firebaseUser == null) {
+      throw Exception(
+        'No user is currently logged in.',
+      );
+    }
+
+    // Update Firebase profile
+    await firebaseUser.updateDisplayName(
+      trimmedName,
+    );
+
+    // Update local profile
+    await UserModel.updateUser(
+      firebaseUser.uid,
+      {
+        'name': trimmedName,
+      },
+    );
+
+    // Update in-memory user
+    if (_currentUser != null) {
+      _currentUser = UserModel(
+        id: _currentUser!.id,
+        name: trimmedName,
+        email: _currentUser!.email,
+        createdAt: _currentUser!.createdAt,
+      );
+    }
   }
 }
