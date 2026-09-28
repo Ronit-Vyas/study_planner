@@ -238,4 +238,12 @@ class AuthService {
       );
     }
   }
+
+  static Future<void> sendPasswordReset(String email) async {
+    final trimmedEmail = email.trim();
+    if (trimmedEmail.isEmpty || !trimmedEmail.contains('@')) {
+      throw Exception('Please enter a valid email address.');
+    }
+    await _auth.sendPasswordResetEmail(email: trimmedEmail);
+  }
 }

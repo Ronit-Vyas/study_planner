@@ -1,183 +1,122 @@
 import 'package:flutter/material.dart';
-
 import '../../models/course_model.dart';
 import '../../services/course_service.dart';
+import '../../theme/app_spacing.dart';
+import '../../theme/app_text_styles.dart';
+import '../../utils/constants.dart';
+import '../../widgets/common/app_section.dart';
+import '../../widgets/common/empty_state.dart';
 import '../../widgets/course_card.dart';
 import 'add_course_screen.dart';
 import 'course_details_screen.dart';
 
 class CoursesScreen extends StatefulWidget {
   const CoursesScreen({super.key});
-
   @override
-  State<CoursesScreen> createState() =>
-      _CoursesScreenState();
+  State<CoursesScreen> createState() => _CoursesScreenState();
 }
 
-class _CoursesScreenState
-    extends State<CoursesScreen> {
-
-  // This is the actual list displayed by the UI.
+class _CoursesScreenState extends State<CoursesScreen> {
   List<Course> courses = [];
-
   bool isLoading = true;
 
   @override
-  void initState() {
-    super.initState();
-
-    _loadCourses();
-  }
+  void initState() { super.initState(); _loadCourses(); }
 
   Future<void> _loadCourses() async {
-    setState(() {
-      isLoading = true;
-    });
-
-    final loadedCourses =
-    await CourseService.getAllCourses();
-
+    if (mounted) setState(() => isLoading = true);
+    final loaded = await CourseService.getAllCourses();
     if (!mounted) return;
-
-    setState(() {
-      courses = loadedCourses;
-      isLoading = false;
-    });
+    setState(() { courses = loaded; isLoading = false; });
   }
 
-  Future<void> _openAddCourse() async {
-    final result = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => const AddCourseScreen(),
-      ),
-    );
-
-    if (result == true) {
-      await _loadCourses();
-    }
+  Future<void> _add() async {
+    final result = await Navigator.push(context, MaterialPageRoute(builder: (_) => const AddCourseScreen()));
+    if (result == true) await _loadCourses();
   }
 
-  Future<void> _openCourseDetails(
-      Course course,
-      ) async {
-    final result = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => CourseDetailsScreen(
-          course: course,
-        ),
+  Future<void> _details(Course course) async {
+    final result = await Navigator.push(context, MaterialPageRoute(builder: (_) => CourseDetailsScreen(course: course)));
+    if (result == true) await _loadCourses();
+  }
+
+  Future<void> _delete(Course course) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete course?'),
+        content: Text('This will remove ${course.name} from your local study plan.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Delete', style: TextStyle(color: AppColors.error))),
+        ],
       ),
     );
-
-    if (result == true) {
+    if (confirmed == true) {
+      await CourseService.deleteCourse(course.id);
       await _loadCourses();
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'My Courses',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-
-      body: _buildBody(),
-
-      floatingActionButton:
-      FloatingActionButton.extended(
-        onPressed: _openAddCourse,
-        icon: const Icon(Icons.add),
-        label: const Text('Add Course'),
-      ),
-    );
-  }
-
-  Widget _buildBody() {
-    if (isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(),
-      );
-    }
-
-    if (courses.isEmpty) {
-      return _buildEmptyState();
-    }
-
-    return ListView.builder(
-      padding: const EdgeInsets.all(20),
-      itemCount: courses.length,
-      itemBuilder: (context, index) {
-        final Course course = courses[index];
-
-        return CourseCard(
-          course: course,
-
-          onTap: () {
-            _openCourseDetails(course);
-          },
-
-          onDelete: () async {
-            await CourseService.deleteCourse(
-              course.id,
-            );
-
-            await _loadCourses();
-          },
-        );
-      },
-    );
-  }
-
-  Widget _buildEmptyState() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(30),
-        child: Column(
-          mainAxisAlignment:
-          MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.menu_book_outlined,
-              size: 80,
-              color: Colors.grey.shade400,
-            ),
-
-            const SizedBox(height: 20),
-
-            const Text(
-              'No Courses Yet',
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
+    return RefreshIndicator(
+      onRefresh: _loadCourses,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final maxWidth = constraints.maxWidth > 900 ? 760.0 : double.infinity;
+          return SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: maxWidth),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(AppSpacing.page, 22, AppSpacing.page, 36),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(child: Text('My Courses', style: AppTextStyles.display)),
+                          IconButton(onPressed: _add, icon: const Icon(Icons.add), color: AppColors.primary),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text('${courses.length} ${courses.length == 1 ? 'course' : 'courses'}', style: AppTextStyles.muted),
+                      const SizedBox(height: AppSpacing.section),
+                      if (isLoading)
+                        const Center(child: Padding(padding: EdgeInsets.all(50), child: CircularProgressIndicator()))
+                      else if (courses.isEmpty)
+                        AppSection(
+                          title: 'Courses',
+                          child: EmptyState(
+                            icon: Icons.menu_book_outlined,
+                            title: 'No courses yet',
+                            message: 'Add your first course and build a focused study plan.',
+                            action: ElevatedButton.icon(onPressed: _add, icon: const Icon(Icons.add, size: 18), label: const Text('Add course')),
+                          ),
+                          dividerAfter: false,
+                        )
+                      else
+                        AppSection(
+                          title: 'Courses',
+                          child: Column(
+                            children: [
+                              for (int i = 0; i < courses.length; i++) ...[
+                                CourseCard(course: courses[i], onTap: () => _details(courses[i]), onDelete: () => _delete(courses[i])),
+                                if (i != courses.length - 1) const Divider(),
+                              ],
+                            ],
+                          ),
+                          dividerAfter: false,
+                        ),
+                    ],
+                  ),
+                ),
               ),
             ),
-
-            const SizedBox(height: 10),
-
-            Text(
-              'Add your first course and we\'ll '
-                  'create your study plan.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Colors.grey.shade600,
-              ),
-            ),
-
-            const SizedBox(height: 25),
-
-            ElevatedButton.icon(
-              onPressed: _openAddCourse,
-              icon: const Icon(Icons.add),
-              label: const Text('Add Course'),
-            ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }

@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import '../../services/auth_service.dart';
 import '../../services/local_storage_service.dart';
 import '../../services/notification_service.dart';
+import '../../theme/app_spacing.dart';
+import '../../theme/app_text_styles.dart';
+import '../../utils/constants.dart';
 import '../auth/login_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -16,6 +19,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   int totalTasks = 0;
   int completedTasks = 0;
   bool notificationsEnabled = true;
+  double dailyStudyHours = 3;
 
   @override
   void initState() {
@@ -24,16 +28,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _loadStats() async {
-    final courses = await LocalStorageService.getCourses();
-    final tasks = await LocalStorageService.getAllTasks();
-    final notifs = await LocalStorageService.getNotificationsEnabled();
+    final results = await Future.wait([
+      LocalStorageService.getCourses(),
+      LocalStorageService.getAllTasks(),
+      LocalStorageService.getNotificationsEnabled(),
+      LocalStorageService.getDailyStudyHours(),
+    ]);
 
     if (!mounted) return;
+
+    final tasks = results[1] as List;
     setState(() {
-      totalCourses = courses.length;
+      totalCourses = (results[0] as List).length;
       totalTasks = tasks.length;
       completedTasks = tasks.where((t) => t.completed).length;
-      notificationsEnabled = notifs;
+      notificationsEnabled = results[2] as bool;
+      dailyStudyHours = results[3] as double;
     });
   }
 
@@ -41,8 +51,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Confirm Logout'),
-        content: const Text('Are you sure you want to log out?'),
+        title: const Text('Log out?'),
+        content: const Text(
+          'Your locally stored study data will remain on this device.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -51,8 +63,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
             child: const Text(
-              'Logout',
-              style: TextStyle(color: Colors.red),
+              'Log out',
+              style: TextStyle(color: AppColors.error),
             ),
           ),
         ],
@@ -65,203 +77,311 @@ class _ProfileScreenState extends State<ProfileScreen> {
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(builder: (_) => const LoginScreen()),
-        (route) => false,
+            (_) => false,
       );
     }
   }
 
-  void _showNotificationSettings() {
-    showModalBottomSheet(
+  Future<void> _studyPreferences() async {
+    double value = dailyStudyHours;
+
+    await showModalBottomSheet<void>(
       context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (ctx) {
-        return StatefulBuilder(
-          builder: (ctx, setSheetState) {
-            return Padding(
-              padding: const EdgeInsets.all(22),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Notification Settings',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheetState) {
+          return Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.page,
+              0,
+              AppSpacing.page,
+              AppSpacing.xl,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Study preferences', style: AppTextStyles.title),
+                const SizedBox(height: 6),
+                const Text(
+                  'This is used when generating your study schedule.',
+                  style: AppTextStyles.muted,
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      value.toStringAsFixed(value % 1 == 0 ? 0 : 1),
+                      style: AppTextStyles.display.copyWith(
+                        color: AppColors.primary,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 15),
-                  SwitchListTile(
-                    title: const Text('Daily Study Reminders'),
-                    subtitle: const Text('Receive alerts for pending tasks & deadlines'),
-                    value: notificationsEnabled,
-                    onChanged: (val) async {
-                      await LocalStorageService.setNotificationsEnabled(val);
-                      setSheetState(() {
-                        notificationsEnabled = val;
-                      });
-                      setState(() {
-                        notificationsEnabled = val;
-                      });
+                    const Padding(
+                      padding: EdgeInsets.only(bottom: 5, left: 5),
+                      child: Text('hours / day', style: AppTextStyles.muted),
+                    ),
+                  ],
+                ),
+                Slider(
+                  value: value,
+                  min: 0.5,
+                  max: 12,
+                  divisions: 23,
+                  label: '${value.toStringAsFixed(1)}h',
+                  onChanged: (next) => setSheetState(() => value = next),
+                ),
+                const SizedBox(height: 10),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () async {
+                      await LocalStorageService.setDailyStudyHours(value);
+                      if (!ctx.mounted) return;
+                      Navigator.pop(ctx);
+                      if (mounted) setState(() => dailyStudyHours = value);
                     },
+                    child: const Text('Save preference'),
                   ),
-                  const SizedBox(height: 15),
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton.icon(
-                      onPressed: () async {
-                        await NotificationService.showNotification(
-                          id: 999,
-                          title: '🔔 Test Study Reminder',
-                          body: 'Notifications are active! Your study plan is on track.',
-                        );
-                        if (!mounted) return;
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Test notification sent!')),
-                        );
-                      },
-                      icon: const Icon(Icons.notifications_active),
-                      label: const Text('Send Test Notification'),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                ],
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Future<void> _notificationSettings() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheetState) => Padding(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.page,
+            0,
+            AppSpacing.page,
+            AppSpacing.xl,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Notifications', style: AppTextStyles.title),
+              const SizedBox(height: 6),
+              const Text(
+                'Study reminders and approaching deadlines.',
+                style: AppTextStyles.muted,
               ),
-            );
-          },
-        );
-      },
+              const SizedBox(height: 12),
+              SwitchListTile.adaptive(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Study reminders'),
+                value: notificationsEnabled,
+                onChanged: (value) async {
+                  await LocalStorageService.setNotificationsEnabled(value);
+                  setSheetState(() => notificationsEnabled = value);
+                  if (mounted) setState(() {});
+                },
+              ),
+              const SizedBox(height: 8),
+              OutlinedButton.icon(
+                onPressed: () async {
+                  await NotificationService.showNotification(
+                    id: 999,
+                    title: 'Study Planner',
+                    body: 'Notifications are working.',
+                  );
+                  if (ctx.mounted) Navigator.pop(ctx);
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Test notification sent.')),
+                    );
+                  }
+                },
+                icon: const Icon(Icons.notifications_active_outlined),
+                label: const Text('Send test notification'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _storageInfo() {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Local storage'),
+        content: const Text(
+          'Your courses, topics, tasks, completion status, and planner preferences are stored locally on this device.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     final user = AuthService.currentUser;
-    final userName = user?.name ?? 'Student';
-    final userEmail = user?.email ?? 'student@example.com';
+    final name = user?.name ?? 'Student';
+    final email = user?.email ?? 'student@example.com';
+    final maxWidth = MediaQuery.sizeOf(context).width > 900 ? 760.0 : double.infinity;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'Profile',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
-            const CircleAvatar(
-              radius: 45,
-              backgroundColor: Colors.indigo,
-              child: Icon(
-                Icons.person,
-                size: 50,
-                color: Colors.white,
-              ),
+    return SingleChildScrollView(
+      child: Center(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: maxWidth),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.page,
+              22,
+              AppSpacing.page,
+              36,
             ),
-            const SizedBox(height: 15),
-            Text(
-              userName,
-              style: const TextStyle(
-                fontSize: 23,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 5),
-            Text(
-              userEmail,
-              style: TextStyle(
-                color: Colors.grey.shade600,
-              ),
-            ),
-            const SizedBox(height: 25),
-
-            // Study Statistics Card (Local Data)
-            Card(
-              elevation: 0,
-              color: Colors.indigo.shade50,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(15),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(18),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    _buildStatItem('Courses', '$totalCourses'),
-                    Container(height: 35, width: 1, color: Colors.grey.shade300),
-                    _buildStatItem('Total Tasks', '$totalTasks'),
-                    Container(height: 35, width: 1, color: Colors.grey.shade300),
-                    _buildStatItem('Completed', '$completedTasks'),
-                  ],
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Profile', style: AppTextStyles.display),
+                const SizedBox(height: AppSpacing.section),
+                Center(
+                  child: Column(
+                    children: [
+                      Container(
+                        width: 64,
+                        height: 64,
+                        decoration: const BoxDecoration(
+                          color: AppColors.primaryLight,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.person_outline_rounded,
+                          size: 32,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(name, style: AppTextStyles.title),
+                      const SizedBox(height: 3),
+                      Text(email, style: AppTextStyles.muted),
+                    ],
+                  ),
                 ),
-              ),
-            ),
-
-            const SizedBox(height: 25),
-
-            Card(
-              elevation: 0,
-              child: Column(
-                children: [
-                  ListTile(
-                    leading: const Icon(Icons.storage_outlined, color: Colors.indigo),
-                    title: const Text('Storage Mode'),
-                    subtitle: const Text('Courses & tasks stored locally on device'),
-                    trailing: const Icon(Icons.check_circle, color: Colors.green),
+                const SizedBox(height: AppSpacing.section),
+                _section(
+                  'Study Summary',
+                  Row(
+                    children: [
+                      _stat('Courses', '$totalCourses'),
+                      _stat('Tasks', '$totalTasks'),
+                      _stat('Completed', '$completedTasks'),
+                    ],
                   ),
-                  const Divider(height: 1),
-                  ListTile(
-                    leading: const Icon(Icons.notifications_outlined),
-                    title: const Text('Notifications'),
-                    subtitle: Text(notificationsEnabled ? 'Enabled' : 'Disabled'),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: _showNotificationSettings,
+                ),
+                _section(
+                  'Settings',
+                  Column(
+                    children: [
+                      _settingRow(
+                        Icons.tune_rounded,
+                        'Study preferences',
+                        '${dailyStudyHours.toStringAsFixed(dailyStudyHours % 1 == 0 ? 0 : 1)}h available per day',
+                        _studyPreferences,
+                      ),
+                      const Divider(),
+                      _settingRow(
+                        Icons.notifications_none_rounded,
+                        'Notifications',
+                        notificationsEnabled ? 'Enabled' : 'Disabled',
+                        _notificationSettings,
+                      ),
+                      const Divider(),
+                      _settingRow(
+                        Icons.storage_outlined,
+                        'Storage',
+                        'Study data is stored on this device',
+                        _storageInfo,
+                      ),
+                    ],
                   ),
-                  const Divider(height: 1),
-                  ListTile(
-                    leading: const Icon(
-                      Icons.logout,
-                      color: Colors.red,
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                const Divider(),
+                const SizedBox(height: AppSpacing.lg),
+                SizedBox(
+                  width: double.infinity,
+                  child: TextButton.icon(
+                    onPressed: _logout,
+                    icon: const Icon(Icons.logout, color: AppColors.error),
+                    label: const Text(
+                      'Log out',
+                      style: TextStyle(color: AppColors.error),
                     ),
-                    title: const Text(
-                      'Logout',
-                      style: TextStyle(color: Colors.red),
-                    ),
-                    onTap: _logout,
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildStatItem(String label, String value) {
-    return Column(
-      children: [
-        Text(
-          value,
-          style: const TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: Colors.indigo,
+  Widget _section(String title, Widget child) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.section),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title.toUpperCase(), style: AppTextStyles.label),
+          const SizedBox(height: 12),
+          child,
+        ],
+      ),
+    );
+  }
+
+  Widget _stat(String label, String value) {
+    return Expanded(
+      child: Column(
+        children: [
+          Text(
+            value,
+            style: AppTextStyles.display.copyWith(fontSize: 24),
           ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 13,
-            color: Colors.grey.shade700,
-          ),
-        ),
-      ],
+          const SizedBox(height: 2),
+          Text(label, style: AppTextStyles.muted),
+        ],
+      ),
+    );
+  }
+
+  Widget _settingRow(
+      IconData icon,
+      String title,
+      String subtitle,
+      VoidCallback onTap,
+      ) {
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      minLeadingWidth: 40,
+      horizontalTitleGap: 10,
+      leading: Icon(icon, color: AppColors.mutedText),
+      title: Text(
+        title,
+        style: AppTextStyles.body.copyWith(fontWeight: FontWeight.w600),
+      ),
+      subtitle: Text(subtitle, style: AppTextStyles.muted),
+      trailing: const Icon(Icons.chevron_right, size: 20),
+      onTap: onTap,
     );
   }
 }

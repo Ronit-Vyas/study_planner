@@ -1,70 +1,74 @@
 import 'package:flutter/material.dart';
-
+import '../../models/course_model.dart';
 import '../../models/task_model.dart';
 import '../../services/auth_service.dart';
 import '../../services/course_service.dart';
 import '../../services/notification_service.dart';
-import '../../widgets/task_card.dart';
+import '../../theme/app_spacing.dart';
+import '../../theme/app_text_styles.dart';
+import '../../widgets/common/app_section.dart';
+import '../../widgets/common/empty_state.dart';
+import '../../widgets/home/course_progress_row.dart';
+import '../../widgets/home/deadline_row.dart';
+import '../../widgets/home/task_row.dart';
+import '../../widgets/home/today_summary.dart';
 import '../calender/calender_screen.dart';
-import '../courses/add_course_screen.dart';
 import '../courses/courses_screen.dart';
 import '../profile/profile_screen.dart';
 
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  Widget build(BuildContext context) => const AppShell();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
-  int selectedIndex = 0;
+class AppShell extends StatefulWidget {
+  const AppShell({super.key});
 
-  final screens = const [
+  @override
+  State<AppShell> createState() => _AppShellState();
+}
+
+class _AppShellState extends State<AppShell> {
+  int index = 0;
+
+  static const pages = [
     HomeContent(),
-    CalendarScreen(),
     CoursesScreen(),
+    CalendarScreen(),
     ProfileScreen(),
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'Study Planner',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+      body: SafeArea(
+        bottom: false,
+        child: IndexedStack(index: index, children: pages),
       ),
-      body: screens[selectedIndex],
       bottomNavigationBar: NavigationBar(
-        selectedIndex: selectedIndex,
-        onDestinationSelected: (index) {
-          setState(() {
-            selectedIndex = index;
-          });
-        },
+        selectedIndex: index,
+        onDestinationSelected: (value) => setState(() => index = value),
         destinations: const [
           NavigationDestination(
             icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home),
+            selectedIcon: Icon(Icons.home_rounded),
             label: 'Home',
           ),
           NavigationDestination(
-            icon: Icon(Icons.calendar_month_outlined),
-            selectedIcon: Icon(Icons.calendar_month),
-            label: 'Calendar',
-          ),
-          NavigationDestination(
             icon: Icon(Icons.menu_book_outlined),
-            selectedIcon: Icon(Icons.menu_book),
+            selectedIcon: Icon(Icons.menu_book_rounded),
             label: 'Courses',
           ),
           NavigationDestination(
-            icon: Icon(Icons.person_outline),
-            selectedIcon: Icon(Icons.person),
+            icon: Icon(Icons.calendar_today_outlined),
+            selectedIcon: Icon(Icons.calendar_today_rounded),
+            label: 'Calendar',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.person_outline_rounded),
+            selectedIcon: Icon(Icons.person_rounded),
             label: 'Profile',
           ),
         ],
@@ -82,6 +86,8 @@ class HomeContent extends StatefulWidget {
 
 class _HomeContentState extends State<HomeContent> {
   List<StudyTask> todayTasks = [];
+  List<StudyTask> allTasks = [];
+  List<Course> courses = [];
   bool isLoading = true;
 
   @override
@@ -91,22 +97,23 @@ class _HomeContentState extends State<HomeContent> {
   }
 
   Future<void> _loadDashboardData() async {
-    setState(() {
-      isLoading = true;
-    });
+    if (mounted) setState(() => isLoading = true);
 
-    final now = DateTime.now();
-    final tasks = await CourseService.getTasksForDate(now);
-    final courses = await CourseService.getAllCourses();
+    final results = await Future.wait([
+      CourseService.getTasksForDate(DateTime.now()),
+      CourseService.getAllTasks(),
+      CourseService.getAllCourses(),
+    ]);
 
     if (!mounted) return;
 
     setState(() {
-      todayTasks = tasks;
+      todayTasks = results[0] as List<StudyTask>;
+      allTasks = results[1] as List<StudyTask>;
+      courses = results[2] as List<Course>;
       isLoading = false;
     });
 
-    // Check deadlines and pending reminders in background
     NotificationService.checkAndNotifyUpcomingDeadlines(courses);
     NotificationService.checkAndNotifyPendingTasks();
   }
@@ -116,231 +123,140 @@ class _HomeContentState extends State<HomeContent> {
     await _loadDashboardData();
   }
 
-  Future<void> _openAddCourse() async {
-    final result = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => const AddCourseScreen(),
-      ),
-    );
-
-    if (result == true) {
-      await _loadDashboardData();
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final userName = AuthService.currentUser?.name ?? 'Student';
-    final completedCount = todayTasks.where((t) => t.completed).length;
-    final totalCount = todayTasks.length;
-    final progress = totalCount > 0 ? (completedCount / totalCount) : 0.0;
+    final firstName = userName.trim().split(RegExp(r'\s+')).first;
+    final completed = todayTasks.where((t) => t.completed).length;
+    final studied = todayTasks
+        .where((t) => t.completed)
+        .fold<double>(0, (sum, t) => sum + t.duration);
+    final remaining = todayTasks
+        .where((t) => !t.completed)
+        .fold<double>(0, (sum, t) => sum + t.duration);
+    final upcoming = [...courses]
+      ..sort((a, b) => a.deadline.compareTo(b.deadline));
 
     return RefreshIndicator(
       onRefresh: _loadDashboardData,
-      child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Greeting
-            Text(
-              'Hello, $userName 👋',
-              style: const TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Let\'s make today productive with your study goals.',
-              style: TextStyle(
-                fontSize: 15,
-                color: Colors.grey.shade600,
-              ),
-            ),
-            const SizedBox(height: 25),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final maxWidth = constraints.maxWidth > 900 ? 760.0 : double.infinity;
 
-            // Progress Card
-            _buildProgressCard(completedCount, totalCount, progress),
-
-            const SizedBox(height: 30),
-
-            // Today's Tasks Header
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'Today\'s Tasks',
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                if (totalCount > 0)
-                  Text(
-                    '$completedCount of $totalCount completed',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey.shade600,
-                    ),
-                  ),
-              ],
-            ),
-            const SizedBox(height: 15),
-
-            if (isLoading)
-              const Center(
+          return SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: maxWidth),
                 child: Padding(
-                  padding: EdgeInsets.all(30),
-                  child: CircularProgressIndicator(),
-                ),
-              )
-            else if (todayTasks.isEmpty)
-              _buildEmptyTaskCard()
-            else
-              ListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: todayTasks.length,
-                itemBuilder: (context, index) {
-                  final task = todayTasks[index];
-                  return TaskCard(
-                    task: task,
-                    onChanged: () => _toggleTask(task),
-                  );
-                },
-              ),
-
-            const SizedBox(height: 25),
-
-            // Add Course Button
-            SizedBox(
-              width: double.infinity,
-              height: 55,
-              child: ElevatedButton.icon(
-                onPressed: _openAddCourse,
-                icon: const Icon(Icons.add),
-                label: const Text(
-                  'Add Course',
-                  style: TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.bold,
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.page,
+                    22,
+                    AppSpacing.page,
+                    36,
                   ),
-                ),
-                style: ElevatedButton.styleFrom(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(15),
+                  child: isLoading
+                      ? const Padding(
+                    padding: EdgeInsets.only(top: 100),
+                    child: Center(child: CircularProgressIndicator()),
+                  )
+                      : Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Good ${_dayPart()}, $firstName',
+                        style: AppTextStyles.display,
+                      ),
+                      const SizedBox(height: 4),
+                      const Text(
+                        "Here's your study overview",
+                        style: AppTextStyles.muted,
+                      ),
+                      const SizedBox(height: AppSpacing.section),
+                      AppSection(
+                        title: 'Today',
+                        child: TodaySummary(
+                          completed: completed,
+                          total: todayTasks.length,
+                          studiedHours: studied,
+                          remainingHours: remaining,
+                        ),
+                      ),
+                      AppSection(
+                        title: "Today's Tasks",
+                        trailing: todayTasks.isNotEmpty
+                            ? Text(
+                          '${todayTasks.length} ${todayTasks.length == 1 ? 'task' : 'tasks'}',
+                          style: AppTextStyles.muted,
+                        )
+                            : null,
+                        child: todayTasks.isEmpty
+                            ? const EmptyState(
+                          icon: Icons.checklist_outlined,
+                          title: 'No tasks for today',
+                          message:
+                          'Your schedule is clear for today.',
+                        )
+                            : Column(
+                          children: todayTasks
+                              .map(
+                                (task) => TaskRow(
+                              task: task,
+                              onChanged: () => _toggleTask(task),
+                            ),
+                          )
+                              .toList(),
+                        ),
+                      ),
+                      AppSection(
+                        title: 'Course Progress',
+                        child: courses.isEmpty
+                            ? const Text(
+                          'No courses yet. Add your first course from the Courses tab.',
+                          style: AppTextStyles.muted,
+                        )
+                            : Column(
+                          children: courses
+                              .take(5)
+                              .map(
+                                (course) => CourseProgressRow(
+                              course: course,
+                              tasks: allTasks,
+                            ),
+                          )
+                              .toList(),
+                        ),
+                      ),
+                      AppSection(
+                        title: 'Upcoming',
+                        child: upcoming.isEmpty
+                            ? const Text(
+                          'No upcoming deadlines.',
+                          style: AppTextStyles.muted,
+                        )
+                            : Column(
+                          children: upcoming
+                              .take(4)
+                              .map((course) => DeadlineRow(course: course))
+                              .toList(),
+                        ),
+                        dividerAfter: false,
+                      ),
+                    ],
                   ),
                 ),
               ),
             ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
 
-  Widget _buildProgressCard(int completed, int total, double progress) {
-    final percentText = (progress * 100).toInt();
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(22),
-      decoration: BoxDecoration(
-        color: Colors.indigo,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.indigo.withValues(alpha: 0.3),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Today\'s Progress',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              Text(
-                '$percentText%',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 15),
-          Text(
-            '$completed / $total Tasks Completed',
-            style: const TextStyle(
-              color: Colors.white70,
-              fontSize: 15,
-            ),
-          ),
-          const SizedBox(height: 12),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: LinearProgressIndicator(
-              value: total > 0 ? progress : 0,
-              minHeight: 10,
-              backgroundColor: Colors.white24,
-              valueColor: const AlwaysStoppedAnimation<Color>(Colors.greenAccent),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEmptyTaskCard() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(25),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
-      child: Column(
-        children: [
-          Icon(
-            Icons.task_alt,
-            size: 60,
-            color: Colors.grey.shade400,
-          ),
-          const SizedBox(height: 15),
-          Text(
-            'No tasks for today',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.grey.shade700,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Add a course and topics to generate your daily study schedule.',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Colors.grey.shade500,
-            ),
-          ),
-        ],
-      ),
-    );
+  String _dayPart() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) return 'morning';
+    if (hour < 17) return 'afternoon';
+    return 'evening';
   }
 }
