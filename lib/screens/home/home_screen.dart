@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import '../../models/course_model.dart';
 import '../../models/task_model.dart';
 import '../../services/course_service.dart';
+import '../../services/storage_change_notifier.dart';
 import '../../services/notification_service.dart';
 import '../../theme/app_spacing.dart';
 import '../../theme/app_text_styles.dart';
@@ -90,14 +93,28 @@ class _HomeContentState extends State<HomeContent> {
   List<Course> courses = [];
   bool isLoading = true;
 
+  StreamSubscription<StorageChangeEvent>? _changeSub;
+
   @override
   void initState() {
     super.initState();
     _loadDashboardData();
+    _changeSub = StorageChangeNotifier.instance.changes.listen((_) {
+      _loadDashboardData();
+    });
+  }
+
+  @override
+  void dispose() {
+    _changeSub?.cancel();
+    super.dispose();
   }
 
   Future<void> _loadDashboardData() async {
-    if (mounted) setState(() => isLoading = true);
+    // Only show the loading spinner on the very first load.
+    // Subsequent refreshes update data silently to avoid screen flashing.
+    final isFirstLoad = isLoading;
+    if (isFirstLoad && mounted) setState(() => isLoading = true);
 
     final results = await Future.wait([
       CourseService.getTasksForDate(DateTime.now()),

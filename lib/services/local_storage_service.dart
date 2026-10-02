@@ -3,6 +3,7 @@ import '../models/course_model.dart';
 import '../models/topic_model.dart';
 import '../models/task_model.dart';
 import 'auth_service.dart';
+import 'storage_change_notifier.dart';
 
 
 class LocalStorageService {
@@ -68,6 +69,7 @@ class LocalStorageService {
 
     final stringList = currentCourses.map((c) => c.toJson()).toList();
     await prefs.setStringList(_coursesKey(userId), stringList);
+    StorageChangeNotifier.instance.notify(StorageChangeType.course);
   }
 
   static Future<void> updateCourse(Course course, {String? userId}) async {
@@ -81,6 +83,7 @@ class LocalStorageService {
 
     final stringList = currentCourses.map((c) => c.toJson()).toList();
     await prefs.setStringList(_coursesKey(userId), stringList);
+    StorageChangeNotifier.instance.notify(StorageChangeType.course);
 
     // Also delete associated topics and tasks from local storage
     final currentTopics = await getAllTopics(userId: userId);
@@ -123,6 +126,7 @@ class LocalStorageService {
     allTopics.removeWhere((t) => t.id == topic.id);
     allTopics.add(topic);
     await _saveTopicsList(allTopics, userId: userId);
+    StorageChangeNotifier.instance.notify(StorageChangeType.topic);
   }
 
   static Future<void> updateTopic(Topic topic, {String? userId}) async {
@@ -139,6 +143,7 @@ class LocalStorageService {
     final remainingTasks =
         currentTasks.where((t) => t.topicId != topicId).toList();
     await _saveTasksList(remainingTasks, userId: userId);
+    StorageChangeNotifier.instance.notify(StorageChangeType.topic);
   }
 
   static Future<void> _saveTopicsList(
@@ -190,6 +195,7 @@ class LocalStorageService {
     }).toList();
 
     await _saveTasksList(tasksWithUser, userId: userId);
+    StorageChangeNotifier.instance.notify(StorageChangeType.task);
   }
 
   static Future<void> addTask(StudyTask task, {String? userId}) async {
@@ -197,6 +203,7 @@ class LocalStorageService {
     allTasks.removeWhere((t) => t.id == task.id);
     allTasks.add(task);
     await _saveTasksList(allTasks, userId: userId);
+    StorageChangeNotifier.instance.notify(StorageChangeType.task);
   }
 
   static Future<void> updateTask(StudyTask task, {String? userId}) async {
@@ -215,12 +222,14 @@ class LocalStorageService {
       }
     }
     await _saveTasksList(allTasks, userId: userId);
+    StorageChangeNotifier.instance.notify(StorageChangeType.task);
   }
 
   static Future<void> deleteTask(String taskId, {String? userId}) async {
     final allTasks = await getAllTasks(userId: userId);
     allTasks.removeWhere((t) => t.id == taskId);
     await _saveTasksList(allTasks, userId: userId);
+    StorageChangeNotifier.instance.notify(StorageChangeType.task);
   }
 
   static Future<void> _saveTasksList(
