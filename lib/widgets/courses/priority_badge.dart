@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../utils/constants.dart';
 import '../../utils/helpers.dart';
 
 class PriorityBadge extends StatelessWidget {
@@ -12,14 +11,23 @@ class PriorityBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final color = priorityColor(priority);
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: compact ? 7 : 9, vertical: compact ? 3 : 5),
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? 6 : 8,
+        vertical: compact ? 1.5 : 2.5,
+      ),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(5),
+        border: Border.all(color: color.withValues(alpha: 0.85), width: 1.1),
       ),
       child: Text(
         priorityText(priority),
-        style: TextStyle(color: color, fontSize: compact ? 10 : 11, fontWeight: FontWeight.w700),
+        style: TextStyle(
+          color: color,
+          fontSize: compact ? 10 : 11,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.2,
+        ),
       ),
     );
   }

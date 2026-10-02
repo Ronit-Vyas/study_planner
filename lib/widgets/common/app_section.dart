@@ -24,7 +24,7 @@ class AppSection extends StatelessWidget {
         Row(
           children: [
             Expanded(child: Text(title.toUpperCase(), style: AppTextStyles.label)),
-            if (trailing != null) trailing!,
+            ?trailing,
           ],
         ),
         const SizedBox(height: AppSpacing.md),

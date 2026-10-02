@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import '../models/course_model.dart';
 import '../models/task_model.dart';
 import '../services/course_service.dart';
-import '../theme/app_text_styles.dart';
 import '../utils/constants.dart';
+import '../utils/helpers.dart';
 import 'courses/priority_badge.dart';
 
 class CourseCard extends StatelessWidget {
@@ -26,22 +26,46 @@ class CourseCard extends StatelessWidget {
         CourseService.getAllTasks(),
       ]),
       builder: (context, snapshot) {
-        final topics = snapshot.data?[0] as List? ?? const [];
         final tasks = snapshot.data?[1] as List<StudyTask>? ?? const [];
         final courseTasks = tasks.where((t) => t.courseId == course.id).toList();
         final completed = courseTasks.where((t) => t.completed).length;
         final progress = courseTasks.isEmpty ? 0.0 : completed / courseTasks.length;
         final percent = (progress * 100).round();
-        final days = course.deadline.difference(DateTime.now()).inDays;
+
+        final firstLetter = course.name.isNotEmpty
+            ? course.name.substring(0, 1).toUpperCase()
+            : 'C';
 
         return InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(12),
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 13),
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
             child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryLight,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: AppColors.primary.withValues(alpha: 0.2),
+                    ),
+                  ),
+                  child: Center(
+                    child: Text(
+                      firstLetter,
+                      style: const TextStyle(
+                        color: AppColors.primary,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 14),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -49,40 +73,16 @@ class CourseCard extends StatelessWidget {
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          Expanded(
+                          Flexible(
                             child: Text(
                               course.name,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: AppTextStyles.title.copyWith(fontSize: 16),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Text(
-                            '$percent%',
-                            style: AppTextStyles.body.copyWith(
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.primary,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(4),
-                        child: LinearProgressIndicator(
-                          value: progress,
-                          minHeight: 5,
-                        ),
-                      ),
-                      const SizedBox(height: 7),
-                      Row(
-                        children: [
-                          Flexible(
-                            child: Text(
-                              '${topics.length} topics · ${course.estimatedHours.toStringAsFixed(course.estimatedHours % 1 == 0 ? 0 : 1)}h',
-                              overflow: TextOverflow.ellipsis,
-                              style: AppTextStyles.muted,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 15.5,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ),
                           const SizedBox(width: 8),
@@ -90,41 +90,57 @@ class CourseCard extends StatelessWidget {
                             priority: course.priority,
                             compact: true,
                           ),
-                          const SizedBox(width: 8),
-                          Text(
-                            days < 0 ? 'Overdue' : '$days days',
-                            style: AppTextStyles.muted.copyWith(
-                              color: days <= 2 ? AppColors.warning : null,
-                              fontWeight: days <= 2 ? FontWeight.w600 : null,
-                            ),
-                          ),
                         ],
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        'Due ${shortMonthName(course.deadline.month)} ${course.deadline.day} • $percent%',
+                        style: const TextStyle(
+                          color: AppColors.mutedText,
+                          fontSize: 12.5,
+                        ),
+                      ),
+                      const SizedBox(height: 7),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(2),
+                        child: LinearProgressIndicator(
+                          value: progress,
+                          minHeight: 3.5,
+                          backgroundColor: const Color(0xFF26282E),
+                          valueColor: const AlwaysStoppedAnimation<Color>(
+                            AppColors.primary,
+                          ),
+                        ),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(width: 2),
-                SizedBox(
-                  width: 36,
-                  height: 36,
-                  child: PopupMenuButton<String>(
-                    padding: EdgeInsets.zero,
-                    tooltip: 'Course actions',
-                    icon: const Icon(
-                      Icons.more_horiz,
-                      size: 20,
-                      color: AppColors.mutedText,
-                    ),
-                    onSelected: (value) {
-                      if (value == 'delete') onDelete();
-                    },
-                    itemBuilder: (_) => const [
-                      PopupMenuItem(
-                        value: 'delete',
-                        child: Text('Delete course'),
-                      ),
-                    ],
+                const SizedBox(width: 4),
+                PopupMenuButton<String>(
+                  padding: EdgeInsets.zero,
+                  tooltip: 'Course actions',
+                  icon: const Icon(
+                    Icons.more_horiz,
+                    size: 20,
+                    color: AppColors.mutedText,
                   ),
+                  color: AppColors.surface,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    side: const BorderSide(color: AppColors.divider),
+                  ),
+                  onSelected: (value) {
+                    if (value == 'delete') onDelete();
+                  },
+                  itemBuilder: (_) => const [
+                    PopupMenuItem(
+                      value: 'delete',
+                      child: Text(
+                        'Delete course',
+                        style: TextStyle(color: AppColors.error),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),

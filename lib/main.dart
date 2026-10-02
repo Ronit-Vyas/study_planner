@@ -23,7 +23,9 @@ class StudyPlannerApp extends StatelessWidget {
   Widget build(BuildContext context) => MaterialApp(
     debugShowCheckedModeBanner: false,
     title: 'Study Planner',
-    theme: AppTheme.lightTheme,
+    theme: AppTheme.darkTheme,
+    darkTheme: AppTheme.darkTheme,
+    themeMode: ThemeMode.dark,
     home: AuthService.isLoggedIn ? const AppShell() : const LoginScreen(),
   );
 }

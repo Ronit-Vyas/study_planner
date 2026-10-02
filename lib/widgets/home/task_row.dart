@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../models/task_model.dart';
 import '../../services/course_service.dart';
-import '../../theme/app_text_styles.dart';
 import '../../utils/constants.dart';
 
 class TaskRow extends StatelessWidget {
@@ -34,25 +33,33 @@ class TaskRow extends StatelessWidget {
 
         return InkWell(
           onTap: onChanged,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(10),
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 9),
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                SizedBox(
-                  width: 32,
-                  height: 32,
-                  child: Center(
-                    child: Checkbox(
-                      value: task.completed,
-                      onChanged: (_) => onChanged(),
-                      visualDensity: VisualDensity.compact,
-                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
+                Container(
+                  width: 22,
+                  height: 22,
+                  decoration: BoxDecoration(
+                    color: task.completed ? AppColors.primary : Colors.transparent,
+                    shape: BoxShape.circle,
+                    border: task.completed
+                        ? null
+                        : Border.all(color: const Color(0xFF4B4F58), width: 1.5),
                   ),
+                  child: task.completed
+                      ? const Center(
+                          child: Icon(
+                            Icons.check_rounded,
+                            size: 14,
+                            color: Color(0xFF081C10),
+                          ),
+                        )
+                      : null,
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 14),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -61,26 +68,27 @@ class TaskRow extends StatelessWidget {
                         topicName,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: AppTextStyles.body.copyWith(
-                          fontWeight: FontWeight.w700,
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
                           decoration: task.completed
                               ? TextDecoration.lineThrough
                               : null,
+                          decorationColor: AppColors.mutedText,
                           color: task.completed
                               ? AppColors.mutedText
-                              : AppColors.text,
+                              : Colors.white,
                         ),
                       ),
-                      const SizedBox(height: 2),
-                      Text(courseName, style: AppTextStyles.muted),
+                      const SizedBox(height: 3),
+                      Text(
+                        '$courseName • ${_hours(task.duration)}',
+                        style: const TextStyle(
+                          color: AppColors.mutedText,
+                          fontSize: 13,
+                        ),
+                      ),
                     ],
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  _hours(task.duration),
-                  style: AppTextStyles.muted.copyWith(
-                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ],

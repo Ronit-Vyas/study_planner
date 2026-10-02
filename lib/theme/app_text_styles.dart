@@ -6,21 +6,21 @@ class AppTextStyles {
     color: AppColors.text,
     fontSize: 26,
     fontWeight: FontWeight.w700,
-    letterSpacing: -0.6,
+    letterSpacing: -0.5,
   );
 
   static const title = TextStyle(
     color: AppColors.text,
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: FontWeight.w700,
     letterSpacing: -0.2,
   );
 
   static const section = TextStyle(
-    color: AppColors.text,
-    fontSize: 15,
+    color: AppColors.mutedText,
+    fontSize: 12,
     fontWeight: FontWeight.w700,
-    letterSpacing: 0.2,
+    letterSpacing: 0.8,
   );
 
   static const body = TextStyle(

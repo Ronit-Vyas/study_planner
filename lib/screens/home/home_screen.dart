@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import '../../models/course_model.dart';
 import '../../models/task_model.dart';
-import '../../services/auth_service.dart';
 import '../../services/course_service.dart';
 import '../../services/notification_service.dart';
 import '../../theme/app_spacing.dart';
 import '../../theme/app_text_styles.dart';
+import '../../utils/constants.dart';
 import '../../widgets/common/app_section.dart';
 import '../../widgets/common/empty_state.dart';
 import '../../widgets/home/course_progress_row.dart';
@@ -125,8 +125,6 @@ class _HomeContentState extends State<HomeContent> {
 
   @override
   Widget build(BuildContext context) {
-    final userName = AuthService.currentUser?.name ?? 'Student';
-    final firstName = userName.trim().split(RegExp(r'\s+')).first;
     final completed = todayTasks.where((t) => t.completed).length;
     final studied = todayTasks
         .where((t) => t.completed)
@@ -137,8 +135,43 @@ class _HomeContentState extends State<HomeContent> {
     final upcoming = [...courses]
       ..sort((a, b) => a.deadline.compareTo(b.deadline));
 
-    return RefreshIndicator(
-      onRefresh: _loadDashboardData,
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        centerTitle: true,
+        title: const Text(
+          'Study Planner',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        actions: [
+          IconButton(
+            onPressed: () {
+              NotificationService.showNotification(
+                id: 100,
+                title: 'Study Planner',
+                body: 'Your study goals are on track!',
+              );
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Notifications active.')),
+              );
+            },
+            icon: const Icon(
+              Icons.notifications_none_rounded,
+              color: Colors.white,
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: 4),
+        ],
+      ),
+      body: RefreshIndicator(
+        onRefresh: _loadDashboardData,
       child: LayoutBuilder(
         builder: (context, constraints) {
           final maxWidth = constraints.maxWidth > 900 ? 760.0 : double.infinity;
@@ -163,25 +196,13 @@ class _HomeContentState extends State<HomeContent> {
                       : Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'Good ${_dayPart()}, $firstName',
-                        style: AppTextStyles.display,
+                      TodaySummary(
+                        completed: completed,
+                        total: todayTasks.length,
+                        studiedHours: studied,
+                        remainingHours: remaining,
                       ),
-                      const SizedBox(height: 4),
-                      const Text(
-                        "Here's your study overview",
-                        style: AppTextStyles.muted,
-                      ),
-                      const SizedBox(height: AppSpacing.section),
-                      AppSection(
-                        title: 'Today',
-                        child: TodaySummary(
-                          completed: completed,
-                          total: todayTasks.length,
-                          studiedHours: studied,
-                          remainingHours: remaining,
-                        ),
-                      ),
+                      const SizedBox(height: 24),
                       AppSection(
                         title: "Today's Tasks",
                         trailing: todayTasks.isNotEmpty
@@ -209,39 +230,42 @@ class _HomeContentState extends State<HomeContent> {
                         ),
                       ),
                       AppSection(
-                        title: 'Course Progress',
-                        child: courses.isEmpty
-                            ? const Text(
-                          'No courses yet. Add your first course from the Courses tab.',
-                          style: AppTextStyles.muted,
-                        )
-                            : Column(
-                          children: courses
-                              .take(5)
-                              .map(
-                                (course) => CourseProgressRow(
-                              course: course,
-                              tasks: allTasks,
-                            ),
-                          )
-                              .toList(),
-                        ),
-                      ),
-                      AppSection(
-                        title: 'Upcoming',
+                        title: 'Upcoming Deadlines',
+                        trailing: upcoming.isNotEmpty
+                            ? Text(
+                                '${upcoming.length} ${upcoming.length == 1 ? 'course' : 'courses'}',
+                                style: AppTextStyles.muted,
+                              )
+                            : null,
+                        dividerAfter: courses.isNotEmpty,
                         child: upcoming.isEmpty
                             ? const Text(
-                          'No upcoming deadlines.',
-                          style: AppTextStyles.muted,
-                        )
+                                'No upcoming deadlines.',
+                                style: AppTextStyles.muted,
+                              )
                             : Column(
-                          children: upcoming
-                              .take(4)
-                              .map((course) => DeadlineRow(course: course))
-                              .toList(),
-                        ),
-                        dividerAfter: false,
+                                children: upcoming
+                                    .take(4)
+                                    .map((course) => DeadlineRow(course: course))
+                                    .toList(),
+                              ),
                       ),
+                      if (courses.isNotEmpty)
+                        AppSection(
+                          title: 'Course Progress',
+                          dividerAfter: false,
+                          child: Column(
+                            children: courses
+                                .take(4)
+                                .map(
+                                  (course) => CourseProgressRow(
+                                    course: course,
+                                    tasks: allTasks,
+                                  ),
+                                )
+                                .toList(),
+                          ),
+                        ),
                     ],
                   ),
                 ),
@@ -250,13 +274,8 @@ class _HomeContentState extends State<HomeContent> {
           );
         },
       ),
-    );
+    ),
+  );
   }
 
-  String _dayPart() {
-    final hour = DateTime.now().hour;
-    if (hour < 12) return 'morning';
-    if (hour < 17) return 'afternoon';
-    return 'evening';
-  }
 }

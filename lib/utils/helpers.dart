@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'constants.dart';
 
 String formatDate(DateTime date) {
   return '${date.day.toString().padLeft(2, '0')}/'
@@ -8,6 +9,10 @@ String formatDate(DateTime date) {
 
 String formatShortDate(DateTime date) {
   return '${date.day}/${date.month}';
+}
+
+String formatDisplayDate(DateTime date) {
+  return '${shortMonthName(date.month)} ${date.day}';
 }
 
 String priorityText(String priority) {
@@ -26,13 +31,13 @@ String priorityText(String priority) {
 Color priorityColor(String priority) {
   switch (priority.toLowerCase()) {
     case 'high':
-      return Colors.red;
+      return AppColors.highPriority;
     case 'medium':
-      return Colors.orange;
+      return AppColors.mediumPriority;
     case 'low':
-      return Colors.green;
+      return AppColors.lowPriority;
     default:
-      return Colors.grey;
+      return AppColors.mutedText;
   }
 }
 
@@ -53,4 +58,28 @@ String monthName(int month) {
   ];
 
   return months[month - 1];
+}
+
+String shortMonthName(int month) {
+  const months = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
+
+  return months[month - 1];
+}
+
+String weekdayShort(int weekday) {
+  const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  return days[weekday - 1];
 }
