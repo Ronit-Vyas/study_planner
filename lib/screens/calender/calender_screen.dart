@@ -81,88 +81,134 @@ class _CalendarScreenState extends State<CalendarScreen> {
     final completed = dayTasks.where((t) => t.completed).length;
     final totalHours = dayTasks.fold<double>(0, (sum, task) => sum + task.duration);
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final maxWidth = constraints.maxWidth > 900 ? 760.0 : double.infinity;
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final maxWidth = constraints.maxWidth > 900 ? 760.0 : double.infinity;
 
-        return SingleChildScrollView(
-          child: Center(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(maxWidth: maxWidth),
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.page,
-                  22,
-                  AppSpacing.page,
-                  36,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Calendar', style: AppTextStyles.display),
-                    const SizedBox(height: 4),
-                    const Text(
-                      'Your study schedule by day',
-                      style: AppTextStyles.muted,
-                    ),
-                    const SizedBox(height: AppSpacing.section),
-                    _calendarHeader(),
-                    const SizedBox(height: 10),
-                    _calendarGrid(),
-                    const SizedBox(height: AppSpacing.section),
-                    AppSection(
-                      title: formatLongDate(selectedDate),
-                      trailing: Text(
-                        '${dayTasks.length} ${dayTasks.length == 1 ? 'task' : 'tasks'} · ${_hours(totalHours)}',
+          return SingleChildScrollView(
+            child: Center(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: maxWidth),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.page,
+                    20,
+                    AppSpacing.page,
+                    40,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Study Calendar', style: AppTextStyles.hero),
+                      const SizedBox(height: 2),
+                      const Text(
+                        'Track your scheduled study sessions and daily progress',
                         style: AppTextStyles.muted,
                       ),
-                      child: isLoading
-                          ? const Padding(
-                        padding: EdgeInsets.all(24),
-                        child: Center(child: CircularProgressIndicator()),
-                      )
-                          : dayTasks.isEmpty
-                          ? const EmptyState(
-                        icon: Icons.event_available_outlined,
-                        title: 'No study tasks',
-                        message: 'There are no scheduled tasks for this day.',
-                      )
-                          : Column(
-                        children: dayTasks
-                            .map(
-                              (task) => TaskRow(
-                            task: task,
-                            onChanged: () => _toggleTask(task),
-                          ),
-                        )
-                            .toList(),
+                      const SizedBox(height: 20),
+
+                      // Calendar Card
+                      Container(
+                        padding: const EdgeInsets.all(18),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: AppColors.cardBorder),
+                          boxShadow: const [
+                            BoxShadow(
+                              color: Color(0x060F172A),
+                              blurRadius: 12,
+                              offset: Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          children: [
+                            _calendarHeader(),
+                            const SizedBox(height: 14),
+                            _calendarGrid(),
+                          ],
+                        ),
                       ),
-                      dividerAfter: false,
-                    ),
-                    if (dayTasks.isNotEmpty) ...[
-                      const SizedBox(height: 10),
-                      Text(
-                        '$completed of ${dayTasks.length} completed',
-                        style: AppTextStyles.muted,
+
+                      const SizedBox(height: 24),
+
+                      // Day's Tasks Section
+                      AppSection(
+                        title: formatLongDate(selectedDate),
+                        trailing: dayTasks.isNotEmpty
+                            ? Text(
+                                '${dayTasks.length} ${dayTasks.length == 1 ? 'task' : 'tasks'} · ${_hours(totalHours)}',
+                                style: AppTextStyles.muted,
+                              )
+                            : null,
+                        dividerAfter: false,
+                        child: isLoading
+                            ? const Padding(
+                                padding: EdgeInsets.all(24),
+                                child: Center(child: CircularProgressIndicator()),
+                              )
+                            : dayTasks.isEmpty
+                                ? Container(
+                                    padding: const EdgeInsets.all(24),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(16),
+                                      border: Border.all(color: AppColors.cardBorder),
+                                    ),
+                                    child: const EmptyState(
+                                      icon: Icons.event_available_outlined,
+                                      title: 'No study tasks for this day',
+                                      message: 'Pick another day with scheduled dots or generate a schedule from Courses.',
+                                    ),
+                                  )
+                                : Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      ...dayTasks.map(
+                                        (task) => TaskRow(
+                                          task: task,
+                                          onChanged: () => _toggleTask(task),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 10),
+                                      Row(
+                                        children: [
+                                          Icon(
+                                            completed == dayTasks.length ? Icons.check_circle : Icons.info_outline,
+                                            size: 15,
+                                            color: completed == dayTasks.length ? AppColors.success : AppColors.mutedText,
+                                          ),
+                                          const SizedBox(width: 6),
+                                          Text(
+                                            '$completed of ${dayTasks.length} tasks completed',
+                                            style: AppTextStyles.muted.copyWith(fontWeight: FontWeight.w600),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
                       ),
                     ],
-                  ],
+                  ),
                 ),
               ),
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 
   Widget _calendarHeader() {
     return Row(
       children: [
-        _monthButton(
-          icon: Icons.chevron_left,
-          tooltip: 'Previous month',
+        IconButton(
           onPressed: () => _changeMonth(-1),
+          tooltip: 'Previous month',
+          icon: const Icon(Icons.chevron_left, color: AppColors.text),
         ),
         Expanded(
           child: Text(
@@ -171,29 +217,12 @@ class _CalendarScreenState extends State<CalendarScreen> {
             style: AppTextStyles.title,
           ),
         ),
-        _monthButton(
-          icon: Icons.chevron_right,
-          tooltip: 'Next month',
+        IconButton(
           onPressed: () => _changeMonth(1),
+          tooltip: 'Next month',
+          icon: const Icon(Icons.chevron_right, color: AppColors.text),
         ),
       ],
-    );
-  }
-
-  Widget _monthButton({
-    required IconData icon,
-    required String tooltip,
-    required VoidCallback onPressed,
-  }) {
-    return SizedBox(
-      width: 40,
-      height: 40,
-      child: IconButton(
-        onPressed: onPressed,
-        tooltip: tooltip,
-        padding: EdgeInsets.zero,
-        icon: Icon(icon, size: 22),
-      ),
     );
   }
 
@@ -203,7 +232,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
     final offset = firstDay.weekday - DateTime.monday;
     final cells = offset + daysInMonth;
     final rows = (cells / 7).ceil();
-    const weekdays = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+    const weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     final todayKey = _key(DateTime.now());
 
     return Column(
@@ -212,20 +241,29 @@ class _CalendarScreenState extends State<CalendarScreen> {
           children: weekdays
               .map(
                 (day) => Expanded(
-              child: Center(child: Text(day, style: AppTextStyles.label)),
-            ),
-          )
+                  child: Center(
+                    child: Text(
+                      day,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.mutedText,
+                      ),
+                    ),
+                  ),
+                ),
+              )
               .toList(),
         ),
-        const SizedBox(height: 6),
-        for (int row = 0; row < rows; row++)
+        const SizedBox(height: 10),
+        for (int row = 0; row < rows; row++) ...[
           Row(
             children: List.generate(7, (column) {
               final index = row * 7 + column;
               final day = index - offset + 1;
 
               if (day < 1 || day > daysInMonth) {
-                return const Expanded(child: SizedBox(height: 48));
+                return const Expanded(child: SizedBox(height: 46));
               }
 
               final date = DateTime(visibleMonth.year, visibleMonth.month, day);
@@ -236,59 +274,47 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
               return Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.all(1),
-                  child: Material(
-                    color: isSelected ? AppColors.primaryLight : Colors.transparent,
-                    borderRadius: BorderRadius.circular(8),
-                    child: InkWell(
-                      onTap: () => _select(date),
-                      borderRadius: BorderRadius.circular(8),
-                      child: Container(
-                        height: 48,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: isSelected
-                                ? AppColors.primary
-                                : Colors.transparent,
-                          ),
+                  padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
+                  child: InkWell(
+                    onTap: () => _select(date),
+                    borderRadius: BorderRadius.circular(10),
+                    child: Container(
+                      height: 46,
+                      decoration: BoxDecoration(
+                        color: isSelected ? AppColors.primary : (isToday ? AppColors.primaryLight : Colors.transparent),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: isToday && !isSelected
+                              ? AppColors.primary
+                              : Colors.transparent,
+                          width: 1.2,
                         ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              '$day',
-                              style: AppTextStyles.body.copyWith(
-                                fontWeight: isSelected || isToday
-                                    ? FontWeight.w700
-                                    : FontWeight.w500,
-                                color: isSelected
-                                    ? AppColors.primary
-                                    : AppColors.text,
-                              ),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            '$day',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: isSelected || isToday ? FontWeight.w700 : FontWeight.w500,
+                              color: isSelected
+                                  ? Colors.white
+                                  : (isToday ? AppColors.primary : AppColors.text),
                             ),
-                            const SizedBox(height: 3),
-                            if (tasks.isNotEmpty)
-                              Icon(
-                                allDone ? Icons.check : Icons.circle,
-                                size: 9,
-                                color: allDone
-                                    ? AppColors.success
-                                    : AppColors.primary,
-                              )
-                            else if (isToday)
-                              Container(
-                                width: 4,
-                                height: 4,
-                                decoration: const BoxDecoration(
-                                  color: AppColors.primary,
-                                  shape: BoxShape.circle,
-                                ),
-                              )
-                            else
-                              const SizedBox(height: 9),
-                          ],
-                        ),
+                          ),
+                          const SizedBox(height: 3),
+                          if (tasks.isNotEmpty)
+                            Icon(
+                              allDone ? Icons.check_circle : Icons.circle,
+                              size: 8,
+                              color: isSelected
+                                  ? Colors.white
+                                  : (allDone ? AppColors.success : AppColors.primary),
+                            )
+                          else
+                            const SizedBox(height: 8),
+                        ],
                       ),
                     ),
                   ),
@@ -296,14 +322,14 @@ class _CalendarScreenState extends State<CalendarScreen> {
               );
             }),
           ),
-        const SizedBox(height: 12),
+          if (row < rows - 1) const SizedBox(height: 4),
+        ],
+        const SizedBox(height: 14),
         const Wrap(
-          alignment: WrapAlignment.start,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          spacing: 14,
-          runSpacing: 6,
+          alignment: WrapAlignment.center,
+          spacing: 16,
           children: [
-            _CalendarLegend(icon: Icons.check, color: AppColors.success, label: 'Completed'),
+            _CalendarLegend(icon: Icons.check_circle, color: AppColors.success, label: 'Completed'),
             _CalendarLegend(icon: Icons.circle, color: AppColors.primary, label: 'Scheduled'),
           ],
         ),
@@ -334,10 +360,14 @@ class _CalendarLegend extends StatelessWidget {
       children: [
         Icon(icon, size: 10, color: color),
         const SizedBox(width: 5),
-        Text(label, style: AppTextStyles.muted),
+        Text(label, style: const TextStyle(fontSize: 12, color: AppColors.mutedText)),
       ],
     );
   }
 }
 
-String formatLongDate(DateTime date) => '${monthName(date.month)} ${date.day}';
+String formatLongDate(DateTime date) {
+  const weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+  const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  return '${weekdays[date.weekday - 1]}, ${date.day} ${months[date.month - 1]}';
+}

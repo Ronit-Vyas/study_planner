@@ -2,10 +2,9 @@ import '../models/course_model.dart';
 import '../models/topic_model.dart';
 import '../models/task_model.dart';
 import 'local_storage_service.dart';
-
+import 'scheduler_service.dart';
 
 class CourseService {
-
   static Future<List<Course>> getAllCourses({String? userId}) async {
     return await LocalStorageService.getCourses(userId: userId);
   }
@@ -26,8 +25,7 @@ class CourseService {
     await LocalStorageService.deleteCourse(courseId, userId: userId);
   }
 
-  //  TOPICS
-
+  // TOPICS
   static Future<List<Topic>> getTopicsForCourse(
     String courseId, {
     String? userId,
@@ -51,7 +49,6 @@ class CourseService {
   }
 
   // TASKS
-
   static Future<List<StudyTask>> getAllTasks({String? userId}) async {
     return await LocalStorageService.getAllTasks(userId: userId);
   }
@@ -83,5 +80,35 @@ class CourseService {
 
   static Future<void> deleteTask(String taskId, {String? userId}) async {
     await LocalStorageService.deleteTask(taskId, userId: userId);
+  }
+
+  // CONVENIENCE & STREAMLINED WORKFLOWS
+  static Future<int> generateAndSaveSchedule({String? userId}) async {
+    final dailyHours = await LocalStorageService.getDailyStudyHours(userId: userId);
+    final courses = await getAllCourses(userId: userId);
+    final allTopics = await LocalStorageService.getAllTopics(userId: userId);
+    final tasks = SchedulerService.generateSchedule(
+      courses: courses,
+      topics: allTopics,
+      hoursPerDay: dailyHours,
+    );
+    await saveTasks(tasks, userId: userId);
+    return tasks.length;
+  }
+
+  static Future<int> createCourseWithTopicsAndSchedule({
+    required Course course,
+    required List<Topic> topics,
+    bool autoGenerateSchedule = true,
+    String? userId,
+  }) async {
+    await addCourse(course, userId: userId);
+    for (final topic in topics) {
+      await addTopic(topic, userId: userId);
+    }
+    if (autoGenerateSchedule && topics.isNotEmpty) {
+      return await generateAndSaveSchedule(userId: userId);
+    }
+    return 0;
   }
 }

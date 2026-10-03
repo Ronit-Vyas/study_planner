@@ -22,24 +22,61 @@ class CourseProgressRow extends StatelessWidget {
       future: CourseService.getTopicsForCourse(course.id),
       builder: (context, snapshot) {
         final topicCount = snapshot.data?.length ?? 0;
-        return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 9),
+
+        return Container(
+          margin: const EdgeInsets.only(bottom: 10),
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: AppColors.cardBorder),
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
-                  Expanded(child: Text(course.name, style: AppTextStyles.body.copyWith(fontWeight: FontWeight.w700))),
-                  Text('$percent%', style: AppTextStyles.body.copyWith(fontWeight: FontWeight.w700, color: AppColors.primary)),
+                  Expanded(
+                    child: Text(
+                      course.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTextStyles.bodyBold,
+                    ),
+                  ),
+                  Text(
+                    '$percent%',
+                    style: AppTextStyles.bodyBold.copyWith(
+                      color: AppColors.primary,
+                      fontSize: 13,
+                    ),
+                  ),
                 ],
               ),
-              const SizedBox(height: 7),
+              const SizedBox(height: 8),
               ClipRRect(
-                borderRadius: BorderRadius.circular(4),
-                child: LinearProgressIndicator(value: progress, minHeight: 5),
+                borderRadius: BorderRadius.circular(6),
+                child: LinearProgressIndicator(
+                  value: progress,
+                  minHeight: 6,
+                  backgroundColor: AppColors.surfaceSubtle,
+                  valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
+                ),
               ),
-              const SizedBox(height: 5),
-              Text('$topicCount topics · ${course.estimatedHours.toStringAsFixed(course.estimatedHours % 1 == 0 ? 0 : 1)}h estimated', style: AppTextStyles.muted),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Text(
+                    '$topicCount topics · ${course.estimatedHours.toStringAsFixed(course.estimatedHours % 1 == 0 ? 0 : 1)}h total',
+                    style: AppTextStyles.muted.copyWith(fontSize: 12),
+                  ),
+                  const Spacer(),
+                  Text(
+                    '$completed of ${courseTasks.length} tasks',
+                    style: AppTextStyles.muted.copyWith(fontSize: 12),
+                  ),
+                ],
+              ),
             ],
           ),
         );
