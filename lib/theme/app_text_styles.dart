@@ -24,14 +24,10 @@ class AppTextStyles {
   );
 
   static const section = TextStyle(
-    color: AppColors.mutedText,
-    fontSize: 12,
-    fontWeight: FontWeight.w700,
-<<<<<<< HEAD
-    letterSpacing: 0.8,
-=======
+      color: AppColors.mutedText,
+      fontSize: 12,
+      fontWeight: FontWeight.w700,
     letterSpacing: 0.1,
->>>>>>> 788069d ([fix] UI theme & [imp] Exam Management & Streak Tracking)
   );
 
   static const body = TextStyle(

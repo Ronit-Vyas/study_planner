@@ -1,6 +1,6 @@
-import '../models/course_model.dart';
-import '../models/topic_model.dart';
-import '../models/task_model.dart';
+import '../data/models/course_model.dart';
+import '../data/models/topic_model.dart';
+import '../data/models/task_model.dart';
 
 class SchedulerService {
   static List<StudyTask> generateSchedule({
@@ -53,7 +53,8 @@ class SchedulerService {
               id: '${topic.id}_${currentDate.millisecondsSinceEpoch}',
               courseId: course.id,
               topicId: topic.id,
-              date: currentDate,
+              title: topic.name,
+              scheduledDate: currentDate,
               duration: todayHours,
             ),
           );

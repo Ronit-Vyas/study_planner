@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 
-import '../models/user_model.dart';
+import '../data/models/user_model.dart';
+import '../data/services/firestore_service.dart';
 
 class AuthService {
   // Firebase Authentication instance
@@ -115,6 +117,7 @@ class AuthService {
     await UserModel.insertUser(
       user.toMap(),
     );
+    unawaited(FirestoreService.saveUserProfile(user));
 
     // Update local state
     _currentUser = user;
@@ -163,6 +166,7 @@ class AuthService {
       _currentUser = UserModel.fromMap(
         localUser,
       );
+      unawaited(FirestoreService.saveUserProfile(_currentUser!));
 
       return _currentUser!;
     }
@@ -181,6 +185,7 @@ class AuthService {
     await UserModel.insertUser(
       user.toMap(),
     );
+    unawaited(FirestoreService.saveUserProfile(user));
 
     _currentUser = user;
 

@@ -11,25 +11,6 @@ class PriorityBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final color = priorityColor(priority);
     return Container(
-<<<<<<< HEAD
-      padding: EdgeInsets.symmetric(
-        horizontal: compact ? 6 : 8,
-        vertical: compact ? 1.5 : 2.5,
-      ),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(5),
-        border: Border.all(color: color.withValues(alpha: 0.85), width: 1.1),
-      ),
-      child: Text(
-        priorityText(priority),
-        style: TextStyle(
-          color: color,
-          fontSize: compact ? 10 : 11,
-          fontWeight: FontWeight.w700,
-          letterSpacing: 0.2,
-        ),
-=======
       padding: EdgeInsets.symmetric(horizontal: compact ? 8 : 10, vertical: compact ? 3 : 5),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.12),
@@ -55,7 +36,6 @@ class PriorityBadge extends StatelessWidget {
             ),
           ),
         ],
->>>>>>> 788069d ([fix] UI theme & [imp] Exam Management & Streak Tracking)
       ),
     );
   }

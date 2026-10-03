@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../utils/helpers.dart';
+import '../../theme/app_text_styles.dart';
+import '../../utils/constants.dart';
 
 class TodaySummary extends StatelessWidget {
   final int completed;
@@ -15,84 +16,14 @@ class TodaySummary extends StatelessWidget {
     required this.remainingHours,
   });
 
-<<<<<<< HEAD
-  String _hours(double value) => value == value.roundToDouble()
-      ? '${value.toInt()}h'
-      : '${value.toStringAsFixed(1)}h';
-=======
   String _hours(double value) =>
       value == value.roundToDouble() ? '${value.toInt()}h' : '${value.toStringAsFixed(1)}h';
->>>>>>> 788069d ([fix] UI theme & [imp] Exam Management & Streak Tracking)
 
   @override
   Widget build(BuildContext context) {
-    final now = DateTime.now();
     final progress = total == 0 ? 0.0 : completed / total;
-<<<<<<< HEAD
-    final totalHours = studiedHours + remainingHours;
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-      decoration: BoxDecoration(
-        color: const Color(0xFF28C76F),
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Today • ${weekdayShort(now.weekday)}, ${shortMonthName(now.month)} ${now.day}',
-            style: const TextStyle(
-              color: Color(0xFF0F381E),
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '$completed/$total tasks done',
-            style: const TextStyle(
-              color: Color(0xFF052010),
-              fontSize: 28,
-              fontWeight: FontWeight.w800,
-              letterSpacing: -0.5,
-            ),
-          ),
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              const Icon(
-                Icons.access_time_rounded,
-                size: 16,
-                color: Color(0xFF0F381E),
-              ),
-              const SizedBox(width: 5),
-              Text(
-                '${_hours(totalHours)} planned',
-                style: const TextStyle(
-                  color: Color(0xFF0F381E),
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(width: 18),
-              const Icon(
-                Icons.track_changes_rounded,
-                size: 16,
-                color: Color(0xFF0F381E),
-              ),
-              const SizedBox(width: 5),
-              Text(
-                '${(progress * 100).round()}%',
-                style: const TextStyle(
-                  color: Color(0xFF0F381E),
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-=======
     final percent = (progress * 100).round();
+
 
     return Container(
       padding: const EdgeInsets.all(18),
@@ -144,8 +75,8 @@ class TodaySummary extends StatelessWidget {
                       total == 0
                           ? 'No tasks scheduled for today. Great time to relax or plan ahead!'
                           : (progress == 1.0
-                              ? 'Fantastic work! You completed your entire study quota.'
-                              : 'Keep going! Complete remaining tasks to maintain momentum.'),
+                          ? 'Fantastic work! You completed your entire study quota.'
+                          : 'Keep going! Complete remaining tasks to maintain momentum.'),
                       style: AppTextStyles.muted,
                     ),
                   ],
@@ -173,13 +104,10 @@ class TodaySummary extends StatelessWidget {
               _metricTile(Icons.timer_outlined, 'Studied', _hours(studiedHours), AppColors.primary),
               const SizedBox(width: 10),
               _metricTile(Icons.hourglass_empty, 'Remaining', _hours(remainingHours), AppColors.warning),
->>>>>>> 788069d ([fix] UI theme & [imp] Exam Management & Streak Tracking)
             ],
           ),
         ],
       ),
-<<<<<<< HEAD
-=======
     );
   }
 
@@ -206,7 +134,6 @@ class TodaySummary extends StatelessWidget {
           ],
         ),
       ),
->>>>>>> 788069d ([fix] UI theme & [imp] Exam Management & Streak Tracking)
     );
   }
 }

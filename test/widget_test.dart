@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:study_planner/models/course_model.dart';
-import 'package:study_planner/models/topic_model.dart';
-import 'package:study_planner/models/task_model.dart';
-import 'package:study_planner/models/user_model.dart';
+import 'package:study_planner/data/models/course_model.dart';
+import 'package:study_planner/data/models/topic_model.dart';
+import 'package:study_planner/data/models/task_model.dart';
+import 'package:study_planner/data/models/user_model.dart';
 import 'package:study_planner/services/local_storage_service.dart';
 import 'package:study_planner/services/scheduler_service.dart';
 
@@ -74,9 +74,9 @@ void main() {
         userId: 'user_123',
         courseId: 'course_1',
         topicId: 'topic_1',
-        date: DateTime(2026, 10, 1),
+        scheduledDate: DateTime(2026, 10, 1),
         duration: 2.0,
-        completed: true,
+        status: TaskStatus.completed,
       );
 
       final json = task.toJson();
@@ -119,9 +119,9 @@ void main() {
         id: 'local_t1',
         courseId: 'local_c1',
         topicId: 'local_top1',
-        date: DateTime.now(),
+        scheduledDate: DateTime.now(),
         duration: 2.5,
-        completed: false,
+        status: TaskStatus.todo,
       );
 
       await LocalStorageService.addTask(task, userId: 'test_user');

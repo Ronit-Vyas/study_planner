@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../models/task_model.dart';
+import '../../data/models/task_model.dart';
 import '../../services/course_service.dart';
 import '../../theme/app_spacing.dart';
 import '../../theme/app_text_styles.dart';

@@ -1,7 +1,7 @@
 import 'package:shared_preferences/shared_preferences.dart';
-import '../models/course_model.dart';
-import '../models/topic_model.dart';
-import '../models/task_model.dart';
+import '../data/models/course_model.dart';
+import '../data/models/topic_model.dart';
+import '../data/models/task_model.dart';
 import 'auth_service.dart';
 import 'storage_change_notifier.dart';
 
@@ -183,15 +183,7 @@ class LocalStorageService {
   }) async {
     final resolvedUserId = _resolveUserId(userId);
     final tasksWithUser = tasks.map((t) {
-      return StudyTask(
-        id: t.id,
-        userId: resolvedUserId,
-        courseId: t.courseId,
-        topicId: t.topicId,
-        date: t.date,
-        duration: t.duration,
-        completed: t.completed,
-      );
+      return t.copyWith(userId: resolvedUserId);
     }).toList();
 
     await _saveTasksList(tasksWithUser, userId: userId);
@@ -215,9 +207,11 @@ class LocalStorageService {
     String? userId,
   }) async {
     final allTasks = await getAllTasks(userId: userId);
-    for (final task in allTasks) {
-      if (task.id == taskId) {
-        task.completed = !task.completed;
+    for (int i = 0; i < allTasks.length; i++) {
+      if (allTasks[i].id == taskId) {
+        final current = allTasks[i];
+        final nextStatus = current.completed ? TaskStatus.todo : TaskStatus.completed;
+        allTasks[i] = current.copyWith(status: nextStatus);
         break;
       }
     }

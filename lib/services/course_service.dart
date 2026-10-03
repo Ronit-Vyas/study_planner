@@ -1,6 +1,6 @@
-import '../models/course_model.dart';
-import '../models/topic_model.dart';
-import '../models/task_model.dart';
+import '../data/models/course_model.dart';
+import '../data/models/topic_model.dart';
+import '../data/models/task_model.dart';
 import 'local_storage_service.dart';
 import 'scheduler_service.dart';
 

@@ -78,7 +78,7 @@ class GroupedRow extends StatelessWidget {
             ),
           ),
           Expanded(child: child),
-          if (trailing != null) trailing!,
+          ?trailing,
         ],
       ),
     );

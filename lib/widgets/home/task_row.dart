@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../models/task_model.dart';
+import '../../data/models/task_model.dart';
 import '../../services/course_service.dart';
+import '../../theme/app_text_styles.dart';
 import '../../utils/constants.dart';
 
 class TaskRow extends StatelessWidget {
@@ -31,68 +32,13 @@ class TaskRow extends StatelessWidget {
         final topicName = topic?.name ?? 'Study task';
         final courseName = course?.name ?? 'Course';
 
-<<<<<<< HEAD
-        return InkWell(
-          onTap: onChanged,
-          borderRadius: BorderRadius.circular(10),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Container(
-                  width: 22,
-                  height: 22,
-                  decoration: BoxDecoration(
-                    color: task.completed ? AppColors.primary : Colors.transparent,
-                    shape: BoxShape.circle,
-                    border: task.completed
-                        ? null
-                        : Border.all(color: const Color(0xFF4B4F58), width: 1.5),
-                  ),
-                  child: task.completed
-                      ? const Center(
-                          child: Icon(
-                            Icons.check_rounded,
-                            size: 14,
-                            color: Color(0xFF081C10),
-                          ),
-                        )
-                      : null,
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        topicName,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                          decoration: task.completed
-                              ? TextDecoration.lineThrough
-                              : null,
-                          decorationColor: AppColors.mutedText,
-                          color: task.completed
-                              ? AppColors.mutedText
-                              : Colors.white,
-                        ),
-                      ),
-                      const SizedBox(height: 3),
-                      Text(
-                        '$courseName • ${_hours(task.duration)}',
-                        style: const TextStyle(
-                          color: AppColors.mutedText,
-                          fontSize: 13,
-=======
         return AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           margin: const EdgeInsets.only(bottom: 8),
           decoration: BoxDecoration(
-            color: task.completed ? AppColors.surfaceSubtle.withValues(alpha: 0.6) : Colors.white,
+            color: task.completed
+                ? AppColors.surfaceSubtle.withValues(alpha: 0.6)
+                : Colors.white,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
               color: task.completed ? Colors.transparent : AppColors.cardBorder,
@@ -118,21 +64,16 @@ class TaskRow extends StatelessWidget {
                           color: task.completed ? AppColors.success : Colors.transparent,
                           borderRadius: BorderRadius.circular(6),
                           border: Border.all(
-                            color: task.completed ? AppColors.success : AppColors.mutedText.withValues(alpha: 0.5),
+                            color: task.completed
+                                ? AppColors.success
+                                : AppColors.mutedText.withValues(alpha: 0.5),
                             width: 1.8,
                           ),
->>>>>>> 788069d ([fix] UI theme & [imp] Exam Management & Streak Tracking)
                         ),
                         child: task.completed
                             ? const Icon(Icons.check, size: 16, color: Colors.white)
                             : null,
                       ),
-<<<<<<< HEAD
-                    ],
-                  ),
-                ),
-              ],
-=======
                     ),
                     const SizedBox(width: 12),
                     // Topic details
@@ -145,15 +86,19 @@ class TaskRow extends StatelessWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: AppTextStyles.bodyBold.copyWith(
-                              decoration: task.completed ? TextDecoration.lineThrough : null,
-                              color: task.completed ? AppColors.mutedText : AppColors.text,
+                              decoration:
+                                  task.completed ? TextDecoration.lineThrough : null,
+                              color: task.completed
+                                  ? AppColors.mutedText
+                                  : AppColors.text,
                             ),
                           ),
                           const SizedBox(height: 3),
                           Row(
                             children: [
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 6, vertical: 2),
                                 decoration: BoxDecoration(
                                   color: AppColors.primaryLight,
                                   borderRadius: BorderRadius.circular(4),
@@ -185,7 +130,8 @@ class TaskRow extends StatelessWidget {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.access_time, size: 12, color: AppColors.mutedText),
+                          const Icon(Icons.access_time,
+                              size: 12, color: AppColors.mutedText),
                           const SizedBox(width: 4),
                           Text(
                             _hours(task.duration),
@@ -200,7 +146,6 @@ class TaskRow extends StatelessWidget {
                   ],
                 ),
               ),
->>>>>>> 788069d ([fix] UI theme & [imp] Exam Management & Streak Tracking)
             ),
           ),
         );

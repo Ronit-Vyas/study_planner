@@ -16,6 +16,8 @@ class UserModel {
     DateTime? createdAt,
   }) : createdAt = createdAt ?? DateTime.now();
 
+  String get firstName => name.trim().split(' ').first;
+
   Map<String, dynamic> toMap() {
     return {
       'id': id,
@@ -32,8 +34,8 @@ class UserModel {
       email: map['email'] as String,
       createdAt: map['created_at'] != null
           ? DateTime.fromMillisecondsSinceEpoch(
-        map['created_at'] as int,
-      )
+              map['created_at'] as int,
+            )
           : DateTime.now(),
     );
   }
@@ -68,9 +70,7 @@ class UserModel {
 
     _database = await openDatabase(
       'study_planner.db',
-
       version: 3,
-
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE users (
@@ -81,9 +81,7 @@ class UserModel {
           )
         ''');
       },
-
       onUpgrade: (db, oldVersion, newVersion) async {
-
         if (oldVersion < 3) {
           // Check whether the old users table exists
           final tables = await db.rawQuery('''
@@ -105,7 +103,6 @@ class UserModel {
             ''');
 
             // Copy existing user information.
-            // Password is intentionally NOT copied.
             await db.execute('''
               INSERT INTO users_new (
                 id,
@@ -146,10 +143,9 @@ class UserModel {
     return _database!;
   }
 
-
   static Future<int> insertUser(
-      Map<String, dynamic> userRow,
-      ) async {
+    Map<String, dynamic> userRow,
+  ) async {
     final db = await database;
 
     return await db.insert(
@@ -160,8 +156,8 @@ class UserModel {
   }
 
   static Future<Map<String, dynamic>?> findByEmail(
-      String email,
-      ) async {
+    String email,
+  ) async {
     final db = await database;
 
     final results = await db.query(
@@ -180,10 +176,9 @@ class UserModel {
     return results.first;
   }
 
-
   static Future<Map<String, dynamic>?> findById(
-      String id,
-      ) async {
+    String id,
+  ) async {
     final db = await database;
 
     final results = await db.query(
@@ -200,11 +195,10 @@ class UserModel {
     return results.first;
   }
 
-
   static Future<int> updateUser(
-      String id,
-      Map<String, dynamic> values,
-      ) async {
+    String id,
+    Map<String, dynamic> values,
+  ) async {
     final db = await database;
 
     return await db.update(
@@ -214,7 +208,6 @@ class UserModel {
       whereArgs: [id],
     );
   }
-
 
   static Future<int> deleteUser(String id) async {
     final db = await database;

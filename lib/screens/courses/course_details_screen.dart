@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../models/course_model.dart';
-import '../../models/topic_model.dart';
-import '../../models/task_model.dart';
+import '../../data/models/course_model.dart';
+import '../../data/models/topic_model.dart';
+import '../../data/models/task_model.dart';
 import '../../services/course_service.dart';
 import '../../services/local_storage_service.dart';
 import '../../services/scheduler_service.dart';
