@@ -187,7 +187,8 @@ class _SubjectsScreenState extends State<SubjectsScreen>
 
         if (filtered.isEmpty) {
           return Padding(
-            padding: const EdgeInsets.all(AppSpacing.xl),
+            padding: const EdgeInsets.fromLTRB(
+                AppSpacing.xl, AppSpacing.xl, AppSpacing.xl, 100),
             child: AppEmptyState(
               icon: Icons.menu_book_rounded,
               title: showArchived ? 'No archived subjects' : 'No subjects yet',

@@ -244,7 +244,7 @@ class StatCard extends StatelessWidget {
     final ic = iconColor ?? AppColors.primary;
 
     return Container(
-      padding: const EdgeInsets.all(AppSpacing.card),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: bg,
         borderRadius: BorderRadius.circular(16),
@@ -252,20 +252,25 @@ class StatCard extends StatelessWidget {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 36,
-            height: 36,
+            width: 34,
+            height: 34,
             decoration: BoxDecoration(
               color: ic.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(icon, size: 18, color: ic),
+            child: Icon(icon, size: 17, color: ic),
           ),
-          const SizedBox(height: 12),
-          Text(value, style: AppTextStyles.statMedium),
+          const SizedBox(height: 8),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(value, style: AppTextStyles.statMedium),
+          ),
           const SizedBox(height: 2),
-          Text(label, style: AppTextStyles.caption),
+          Text(label, style: AppTextStyles.caption, overflow: TextOverflow.ellipsis, maxLines: 1),
         ],
       ),
     );

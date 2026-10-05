@@ -36,7 +36,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         final completed = todayTasks.where((t) => t.completed).length;
         final remaining = todayTasks.length - completed;
         final todayProgress =
-            todayTasks.isEmpty ? 0.0 : completed / todayTasks.length;
+        todayTasks.isEmpty ? 0.0 : completed / todayTasks.length;
         final dailyGoal = provider.dailyHoursGoal;
         final todayHours = provider.todayStudyHours;
         final goalProgress = (todayHours / dailyGoal).clamp(0.0, 1.0);
@@ -74,8 +74,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         title: "Today's Schedule",
                         trailing: todayTasks.isNotEmpty
                             ? Text('$completed / ${todayTasks.length} done',
-                                style: AppTextStyles.caption.copyWith(
-                                    color: AppColors.primary))
+                            style: AppTextStyles.caption.copyWith(
+                                color: AppColors.primary))
                             : null,
                         child: todayTasks.isEmpty
                             ? _emptyScheduleCard(context)
@@ -116,14 +116,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   // ── Hero Header ────────────────────────────────────────────────────────────
   Widget _buildHeroHeader(
-    BuildContext context,
-    AppProvider provider,
-    double todayProgress,
-    int remaining,
-    double dailyGoal,
-    double todayHours,
-    double goalProgress,
-  ) {
+      BuildContext context,
+      AppProvider provider,
+      double todayProgress,
+      int remaining,
+      double dailyGoal,
+      double todayHours,
+      double goalProgress,
+      ) {
     final userName = _userName(context);
     final firstName = userName.split(' ').first;
     final greeting = _greeting();
@@ -139,49 +139,75 @@ class _DashboardScreenState extends State<DashboardScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Top row: date + streak
+          // Top row: date + streak.
+          // Expanded/Flexible prevents long text from overflowing on compact phones.
           Row(
             children: [
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(100),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.calendar_today_rounded,
-                        size: 12, color: Colors.white70),
-                    const SizedBox(width: 6),
-                    Text(
-                      _formattedDate(),
-                      style: const TextStyle(
-                          color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
+              Expanded(
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(100),
                     ),
-                  ],
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.calendar_today_rounded,
+                            size: 12, color: Colors.white70),
+                        const SizedBox(width: 6),
+                        Flexible(
+                          child: Text(
+                            _formattedDate(),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
-              const Spacer(),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(100),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Text('🔥', style: TextStyle(fontSize: 12)),
-                    const SizedBox(width: 4),
-                    Text(
-                      '${provider.currentStreak} day streak',
-                      style: const TextStyle(
-                          color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(100),
                     ),
-                  ],
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text('🔥', style: TextStyle(fontSize: 12)),
+                        const SizedBox(width: 4),
+                        Flexible(
+                          child: Text(
+                            '${provider.currentStreak} day streak',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.right,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -192,6 +218,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
           // Greeting
           Text(
             '$greeting, $firstName! 👋',
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
             style: const TextStyle(
               color: Colors.white,
               fontSize: 26,
@@ -224,16 +252,31 @@ class _DashboardScreenState extends State<DashboardScreen> {
               children: [
                 Row(
                   children: [
-                    Text(
-                      'Daily Goal',
-                      style: const TextStyle(
-                          color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w500),
+                    const Flexible(
+                      child: Text(
+                        'Daily Goal',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
                     ),
-                    const Spacer(),
-                    Text(
-                      '${todayHours.toStringAsFixed(1)}h / ${dailyGoal.toStringAsFixed(0)}h',
-                      style: const TextStyle(
-                          color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700),
+                    const SizedBox(width: 12),
+                    Flexible(
+                      child: Text(
+                        '${todayHours.toStringAsFixed(1)}h / ${dailyGoal.toStringAsFixed(0)}h',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.right,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -274,13 +317,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final streak = provider.currentStreak;
     final weekHours = provider.weeklyStudyHours;
 
+    // Use a fixed minimum height instead of childAspectRatio.
+    // childAspectRatio was making these cards too short on compact phones,
+    // which caused Flutter's "BOTTOM OVERFLOWED BY XX PIXELS" warning.
     return GridView.count(
       crossAxisCount: 2,
       crossAxisSpacing: 12,
       mainAxisSpacing: 12,
+      mainAxisExtent: 150,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      childAspectRatio: 1.6,
       children: [
         StatCard(
           label: 'Completed Today',
@@ -337,14 +383,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
         Text('Quick Actions', style: AppTextStyles.subtitle),
         const SizedBox(height: AppSpacing.md),
         Row(
-          children: actions
-              .map((a) => Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: _QuickActionButton(action: a),
-                    ),
-                  ))
-              .toList(),
+          children: [
+            for (var i = 0; i < actions.length; i++)
+              Expanded(
+                child: Padding(
+                  padding: EdgeInsets.only(right: i == actions.length - 1 ? 0 : 8),
+                  child: _QuickActionButton(action: actions[i]),
+                ),
+              ),
+          ],
         ),
       ],
     );
@@ -372,7 +419,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         icon: Icons.event_note_rounded,
         title: 'No sessions today',
         message:
-            'Add subjects and topics, then generate a smart schedule from the Timetable tab.',
+        'Add subjects and topics, then generate a smart schedule from the Timetable tab.',
       ),
     );
   }
@@ -389,8 +436,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
         final urgentColor = days <= 3
             ? AppColors.accentRose
             : days <= 7
-                ? AppColors.accentAmber
-                : AppColors.accentGreen;
+            ? AppColors.accentAmber
+            : AppColors.accentGreen;
 
         return Padding(
           padding: const EdgeInsets.only(bottom: 8),
@@ -412,10 +459,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(exam.name, style: AppTextStyles.bodyMedium),
+                      Text(
+                        exam.name,
+                        style: AppTextStyles.bodyMedium,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                       Text(
                         course?.name ?? 'Unknown Subject',
                         style: AppTextStyles.caption,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
@@ -667,7 +721,7 @@ class _TaskTile extends StatelessWidget {
                   ),
                   child: isDone
                       ? const Icon(Icons.check_rounded,
-                          size: 14, color: Colors.white)
+                      size: 14, color: Colors.white)
                       : null,
                 ),
               ),
@@ -682,7 +736,7 @@ class _TaskTile extends StatelessWidget {
                           : (course?.name ?? 'Study Session'),
                       style: AppTextStyles.bodyMedium.copyWith(
                         decoration:
-                            isDone ? TextDecoration.lineThrough : null,
+                        isDone ? TextDecoration.lineThrough : null,
                         color: isDone ? AppColors.mutedDark : null,
                       ),
                       overflow: TextOverflow.ellipsis,
@@ -691,11 +745,17 @@ class _TaskTile extends StatelessWidget {
                     Text(
                       '$timeStr – $endStr · ${task.duration.toStringAsFixed(1)}h',
                       style: AppTextStyles.caption,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),
               ),
-              PriorityBadge(priority: task.priority.name),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerRight,
+                child: PriorityBadge(priority: task.priority.name),
+              ),
             ],
           ),
         ),
