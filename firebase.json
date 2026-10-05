@@ -1,1 +1,1 @@
-{"flutter":{"platforms":{"dart":{"lib/firebase_options.dart":{"projectId":"study-planner-97719","configurations":{"web":"1:658851404227:web:df76d4b16c92ebe9d3c576"}}}}}}
+{"flutter":{"platforms":{"dart":{"lib/firebase_options.dart":{"projectId":"study-planner-97719","configurations":{"android":"1:658851404227:android:3ef8246d31118ac4d3c576"}}},"android":{"default":{"projectId":"study-planner-97719","appId":"1:658851404227:android:3ef8246d31118ac4d3c576","fileOutput":"android/app/google-services.json"}}}}}

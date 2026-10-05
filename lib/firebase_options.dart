@@ -21,10 +21,7 @@ class DefaultFirebaseOptions {
     }
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for android - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return android;
       case TargetPlatform.iOS:
         return ios;
       case TargetPlatform.macOS:
@@ -71,5 +68,13 @@ class DefaultFirebaseOptions {
     authDomain: 'study-planner-97719.firebaseapp.com',
     storageBucket: 'study-planner-97719.firebasestorage.app',
     measurementId: 'G-2LH3BVN9DS',
+  );
+
+  static const FirebaseOptions android = FirebaseOptions(
+    apiKey: 'AIzaSyAhAR8FznqVxKVvRmUMzVCF7BUXq7Mtz-A',
+    appId: '1:658851404227:android:3ef8246d31118ac4d3c576',
+    messagingSenderId: '658851404227',
+    projectId: 'study-planner-97719',
+    storageBucket: 'study-planner-97719.firebasestorage.app',
   );
 }

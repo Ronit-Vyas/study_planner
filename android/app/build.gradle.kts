@@ -1,5 +1,8 @@
 plugins {
     id("com.android.application")
+    // START: FlutterFire Configuration
+    id("com.google.gms.google-services")
+    // END: FlutterFire Configuration
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }
@@ -17,7 +20,7 @@ android {
 
     defaultConfig {
         applicationId = "com.example.study_planner"
-        minSdk = 23        // firebase_auth + flutter_local_notifications require ≥ 23
+        minSdk = flutter.minSdkVersion        // firebase_auth + flutter_local_notifications require ≥ 23
         targetSdk = 35     // Target Android 15 for Vivo T4 5G compatibility
         versionCode = flutter.versionCode
         versionName = flutter.versionName

@@ -1,7 +1,9 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:sqflite/sqflite.dart';
-import 'package:sqflite_common_ffi_web/sqflite_ffi_web.dart';
+// Only import the web factory on web — on Android/iOS this is a no-op stub.
+import 'package:sqflite_common_ffi_web/sqflite_ffi_web.dart'
+    if (dart.library.io) 'sqflite_stub.dart';
 
 class UserModel {
   final String id;
